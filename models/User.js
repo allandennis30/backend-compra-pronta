@@ -103,6 +103,8 @@ class User {
         cnpj: userData.cnpj || null,
         nome_empresa: userData.nomeEmpresa || null,
         endereco: userData.endereco || {},
+        latitude: userData.latitude || 0,
+        longitude: userData.longitude || 0,
         ativo: true,
         data_criacao: new Date().toISOString()
       };

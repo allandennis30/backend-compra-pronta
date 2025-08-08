@@ -6,6 +6,7 @@ require('dotenv').config();
 
 const authRoutes = require('./routes/auth');
 const { errorHandler } = require('./middleware/errorHandler');
+const { initializeDatabase } = require('./database/init');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -71,10 +72,13 @@ app.use('*', (req, res) => {
 });
 
 // Iniciar servidor
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
   console.log(`🚀 Servidor rodando na porta ${PORT}`);
   console.log(`📍 Ambiente: ${process.env.NODE_ENV}`);
   console.log(`🔗 Health check: http://localhost:${PORT}/health`);
+  
+  // Inicializar banco de dados
+  await initializeDatabase();
 });
 
 module.exports = app;

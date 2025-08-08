@@ -22,6 +22,45 @@ const loginValidation = [
 ];
 
 /**
+ * Validações para registro
+ */
+const registerValidation = [
+  body('name')
+    .notEmpty()
+    .withMessage('Nome é obrigatório')
+    .trim()
+    .isLength({ min: 2, max: 100 })
+    .withMessage('Nome deve ter entre 2 e 100 caracteres'),
+  body('email')
+    .isEmail()
+    .normalizeEmail()
+    .withMessage('Email deve ser válido'),
+  body('senha')
+    .isLength({ min: 6 })
+    .withMessage('Senha deve ter pelo menos 6 caracteres')
+    .trim(),
+  body('phone')
+    .optional()
+    .trim(),
+  body('address')
+    .optional()
+    .isObject()
+    .withMessage('Endereço deve ser um objeto válido'),
+  body('latitude')
+    .optional()
+    .isFloat({ min: -90, max: 90 })
+    .withMessage('Latitude deve ser um número válido'),
+  body('longitude')
+    .optional()
+    .isFloat({ min: -180, max: 180 })
+    .withMessage('Longitude deve ser um número válido'),
+  body('istore')
+    .optional()
+    .isBoolean()
+    .withMessage('istore deve ser um valor booleano')
+];
+
+/**
  * Gerar JWT token
  */
 const generateToken = (user) => {
@@ -80,6 +119,61 @@ router.post('/login', loginValidation, asyncHandler(async (req, res) => {
 
   res.status(200).json({
     message: 'Login realizado com sucesso',
+    token,
+    user: sanitizedUser,
+    expiresIn: process.env.JWT_EXPIRES_IN || '24h'
+  });
+}));
+
+/**
+ * POST /api/auth/register
+ * Registrar novo usuário
+ */
+router.post('/register', registerValidation, asyncHandler(async (req, res) => {
+  // Verificar erros de validação
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({
+      error: 'Dados inválidos',
+      message: 'Verifique os dados fornecidos',
+      details: errors.array()
+    });
+  }
+
+  const { name, email, senha, phone, address, latitude, longitude, istore } = req.body;
+
+  // Verificar se o usuário já existe
+  const existingUser = await User.findByEmail(email);
+  if (existingUser) {
+    return res.status(409).json({
+      error: 'Usuário já existe',
+      message: 'Este email já está cadastrado'
+    });
+  }
+
+  // Criar novo usuário
+  const userData = {
+    nome: name,
+    email,
+    senha,
+    telefone: phone || '',
+    endereco: address || {},
+    latitude: latitude || 0,
+    longitude: longitude || 0,
+    tipo: istore ? 'vendedor' : 'cliente',
+    ativo: true
+  };
+
+  const newUser = await User.create(userData);
+  
+  // Gerar token
+  const token = generateToken(newUser);
+  
+  // Remover dados sensíveis
+  const sanitizedUser = User.sanitizeUser(newUser);
+
+  res.status(201).json({
+    message: 'Usuário criado com sucesso',
     token,
     user: sanitizedUser,
     expiresIn: process.env.JWT_EXPIRES_IN || '24h'

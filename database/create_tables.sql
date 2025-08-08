@@ -13,6 +13,8 @@ CREATE TABLE IF NOT EXISTS users (
   cnpj VARCHAR(18),
   nome_empresa VARCHAR(255),
   endereco JSONB DEFAULT '{}',
+  latitude DECIMAL(10, 8) DEFAULT 0,
+  longitude DECIMAL(11, 8) DEFAULT 0,
   ativo BOOLEAN DEFAULT true,
   data_criacao TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   data_atualizacao TIMESTAMP WITH TIME ZONE DEFAULT NOW()
