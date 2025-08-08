@@ -68,13 +68,13 @@ CREATE TRIGGER update_sellers_updated_at
 -- Inserir dados de teste
 -- Inserir clientes de teste
 INSERT INTO clients (nome, email, senha, telefone, cpf, endereco) VALUES
-('Maria Santos', 'maria@cliente.com', '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj/RK.s5uDfm', '(11) 88888-8888', '123.456.789-01', '{"rua": "Av. Paulista, 1000", "bairro": "Bela Vista", "cidade": "São Paulo", "cep": "01310-100", "estado": "SP"}'),
-('Ana Costa', 'ana@cliente.com', '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj/RK.s5uDfm', '(11) 66666-6666', '987.654.321-09', '{"rua": "Rua Oscar Freire, 789", "bairro": "Jardins", "cidade": "São Paulo", "cep": "01426-001", "estado": "SP"}');
+('Maria Santos', 'maria@cliente.com', '$2a$12$sa6/X81GyVLoEQyffWjnNOAnuGA/yPb.tGLpV3xtRJE4LpVg5l0mK', '(11) 88888-8888', '123.456.789-01', '{"rua": "Av. Paulista, 1000", "bairro": "Bela Vista", "cidade": "São Paulo", "cep": "01310-100", "estado": "SP"}'),
+('Ana Costa', 'ana@cliente.com', '$2a$12$sa6/X81GyVLoEQyffWjnNOAnuGA/yPb.tGLpV3xtRJE4LpVg5l0mK', '(11) 66666-6666', '987.654.321-09', '{"rua": "Rua Oscar Freire, 789", "bairro": "Jardins", "cidade": "São Paulo", "cep": "01426-001", "estado": "SP"}');
 
 -- Inserir vendedores de teste
 INSERT INTO sellers (nome, email, senha, telefone, cnpj, nome_empresa, endereco) VALUES
-('João Silva', 'joao@vendedor.com', '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj/RK.s5uDfm', '(11) 99999-9999', '12.345.678/0001-90', 'Supermercado Silva', '{"rua": "Rua das Flores, 123", "bairro": "Centro", "cidade": "São Paulo", "cep": "01234-567", "estado": "SP"}'),
-('Carlos Oliveira', 'carlos@vendedor.com', '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj/RK.s5uDfm', '(11) 77777-7777', '98.765.432/0001-10', 'Mercado Oliveira', '{"rua": "Rua Augusta, 456", "bairro": "Consolação", "cidade": "São Paulo", "cep": "01305-000", "estado": "SP"}');
+('João Silva', 'joao@vendedor.com', '$2a$12$sa6/X81GyVLoEQyffWjnNOAnuGA/yPb.tGLpV3xtRJE4LpVg5l0mK', '(11) 99999-9999', '12.345.678/0001-90', 'Supermercado Silva', '{"rua": "Rua das Flores, 123", "bairro": "Centro", "cidade": "São Paulo", "cep": "01234-567", "estado": "SP"}'),
+('Carlos Oliveira', 'carlos@vendedor.com', '$2a$12$sa6/X81GyVLoEQyffWjnNOAnuGA/yPb.tGLpV3xtRJE4LpVg5l0mK', '(11) 77777-7777', '98.765.432/0001-10', 'Mercado Oliveira', '{"rua": "Rua Augusta, 456", "bairro": "Consolação", "cidade": "São Paulo", "cep": "01305-000", "estado": "SP"}');
 
 -- Habilitar RLS (Row Level Security) - opcional
 ALTER TABLE clients ENABLE ROW LEVEL SECURITY;

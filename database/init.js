@@ -9,23 +9,28 @@ async function initializeDatabase() {
   try {
     console.log('🔄 Verificando estrutura do banco de dados...');
     
-    // Tentar fazer uma consulta simples na tabela users para verificar se existe
-    const { data, error } = await supabase
-      .from('users')
+    // Verificar se as tabelas clients e sellers existem
+    const clientsCheck = await supabase
+      .from('clients')
       .select('count', { count: 'exact', head: true });
     
-    if (error) {
-      // Se a tabela não existe, tentar criar usando método alternativo
-      if (error.message && error.message.includes('relation "users" does not exist')) {
-        console.log('📋 Tabela users não encontrada, tentando criar...');
+    const sellersCheck = await supabase
+      .from('sellers')
+      .select('count', { count: 'exact', head: true });
+    
+    if (clientsCheck.error || sellersCheck.error) {
+      // Se alguma tabela não existe, informar sobre criação manual
+      if ((clientsCheck.error && clientsCheck.error.message.includes('relation "clients" does not exist')) ||
+          (sellersCheck.error && sellersCheck.error.message.includes('relation "sellers" does not exist'))) {
+        console.log('📋 Tabelas clients/sellers não encontradas, execute o script de criação...');
         await createTablesDirectly();
       } else {
-        console.error('⚠️  Erro ao verificar tabela users:', error.message);
+        console.error('⚠️  Erro ao verificar tabelas:', clientsCheck.error?.message || sellersCheck.error?.message);
         console.log('💡 Execute o script SQL manualmente no painel do Supabase.');
         console.log('📖 Consulte: COMO_EXECUTAR_SCRIPT_SUPABASE.md');
       }
     } else {
-      console.log('✅ Tabela users já existe e está acessível.');
+      console.log('✅ Tabelas clients e sellers já existem e estão acessíveis.');
       console.log('📊 Banco de dados pronto para uso.');
     }
     
