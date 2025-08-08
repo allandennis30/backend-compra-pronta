@@ -16,8 +16,8 @@ const loginValidation = [
     .normalizeEmail()
     .withMessage('Email deve ser válido'),
   body('senha')
-    .isLength({ min: 6 })
-    .withMessage('Senha deve ter pelo menos 6 caracteres')
+    .notEmpty()
+    .withMessage('Senha é obrigatória')
     .trim()
 ];
 
