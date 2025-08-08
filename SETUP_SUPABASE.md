@@ -87,7 +87,9 @@ A dependência `@supabase/supabase-js` foi adicionada ao `package.json`.
 ### Arquivos Modificados
 - `backend/package.json` - Adicionada dependência do Supabase
 - `backend/.env` - Adicionadas variáveis de ambiente
-- `backend/models/User.js` - Substituído modelo mockado por integração com Supabase
+- `backend/models/Client.js` - Novo modelo para clientes
+- `backend/models/Seller.js` - Novo modelo para vendedores
+- `backend/models/User.js` - Removido (substituído pelos modelos separados)
 
 ## 6. Testando a Integração
 

@@ -165,7 +165,8 @@ backend/
 │   ├── auth.js          # Middleware de autenticação JWT
 │   └── errorHandler.js  # Tratamento centralizado de erros
 ├── models/
-│   └── User.js          # Modelo de usuário com dados mockados
+│   ├── Client.js        # Modelo de cliente
+│   └── Seller.js        # Modelo de vendedor
 ├── routes/
 │   └── auth.js          # Rotas de autenticação
 ├── .env                 # Variáveis de ambiente

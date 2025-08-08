@@ -1,17 +1,31 @@
--- Criação da tabela de usuários no Supabase
+-- Criação das tabelas de clientes e vendedores no Supabase
 -- Execute este script no SQL Editor do Supabase
 
--- Criar tabela users
-CREATE TABLE IF NOT EXISTS users (
+-- Criar tabela clients (clientes)
+CREATE TABLE IF NOT EXISTS clients (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   nome VARCHAR(255) NOT NULL,
   email VARCHAR(255) UNIQUE NOT NULL,
   senha VARCHAR(255) NOT NULL,
-  tipo VARCHAR(50) NOT NULL DEFAULT 'cliente' CHECK (tipo IN ('cliente', 'vendedor')),
   telefone VARCHAR(20),
   cpf VARCHAR(14),
-  cnpj VARCHAR(18),
-  nome_empresa VARCHAR(255),
+  endereco JSONB DEFAULT '{}',
+  latitude DECIMAL(10, 8) DEFAULT 0,
+  longitude DECIMAL(11, 8) DEFAULT 0,
+  ativo BOOLEAN DEFAULT true,
+  data_criacao TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  data_atualizacao TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Criar tabela sellers (vendedores)
+CREATE TABLE IF NOT EXISTS sellers (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  nome VARCHAR(255) NOT NULL,
+  email VARCHAR(255) UNIQUE NOT NULL,
+  senha VARCHAR(255) NOT NULL,
+  telefone VARCHAR(20),
+  cnpj VARCHAR(18) NOT NULL,
+  nome_empresa VARCHAR(255) NOT NULL,
   endereco JSONB DEFAULT '{}',
   latitude DECIMAL(10, 8) DEFAULT 0,
   longitude DECIMAL(11, 8) DEFAULT 0,
@@ -21,9 +35,15 @@ CREATE TABLE IF NOT EXISTS users (
 );
 
 -- Criar índices para melhor performance
-CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
-CREATE INDEX IF NOT EXISTS idx_users_tipo ON users(tipo);
-CREATE INDEX IF NOT EXISTS idx_users_ativo ON users(ativo);
+-- Índices para tabela clients
+CREATE INDEX IF NOT EXISTS idx_clients_email ON clients(email);
+CREATE INDEX IF NOT EXISTS idx_clients_ativo ON clients(ativo);
+CREATE INDEX IF NOT EXISTS idx_clients_cpf ON clients(cpf);
+
+-- Índices para tabela sellers
+CREATE INDEX IF NOT EXISTS idx_sellers_email ON sellers(email);
+CREATE INDEX IF NOT EXISTS idx_sellers_ativo ON sellers(ativo);
+CREATE INDEX IF NOT EXISTS idx_sellers_cnpj ON sellers(cnpj);
 
 -- Criar função para atualizar data_atualizacao automaticamente
 CREATE OR REPLACE FUNCTION update_updated_at_column()
@@ -34,26 +54,42 @@ BEGIN
 END;
 $$ language 'plpgsql';
 
--- Criar trigger para atualizar data_atualizacao
-CREATE TRIGGER update_users_updated_at
-    BEFORE UPDATE ON users
+-- Criar triggers para atualizar data_atualizacao
+CREATE TRIGGER update_clients_updated_at
+    BEFORE UPDATE ON clients
     FOR EACH ROW
     EXECUTE FUNCTION update_updated_at_column();
 
--- Inserir usuários de teste
-INSERT INTO users (nome, email, senha, tipo, telefone, cnpj, nome_empresa, endereco) VALUES
-('João Silva', 'joao@vendedor.com', '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj/RK.s5uDfm', 'vendedor', '(11) 99999-9999', '12.345.678/0001-90', 'Supermercado Silva', '{"rua": "Rua das Flores, 123", "bairro": "Centro", "cidade": "São Paulo", "cep": "01234-567", "estado": "SP"}'),
-('Maria Santos', 'maria@cliente.com', '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj/RK.s5uDfm', 'cliente', '(11) 88888-8888', NULL, NULL, '{"rua": "Av. Paulista, 1000", "bairro": "Bela Vista", "cidade": "São Paulo", "cep": "01310-100", "estado": "SP"}'),
-('Carlos Oliveira', 'carlos@vendedor.com', '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj/RK.s5uDfm', 'vendedor', '(11) 77777-7777', '98.765.432/0001-10', 'Mercado Oliveira', '{"rua": "Rua Augusta, 456", "bairro": "Consolação", "cidade": "São Paulo", "cep": "01305-000", "estado": "SP"}'),
-('Ana Costa', 'ana@cliente.com', '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj/RK.s5uDfm', 'cliente', '(11) 66666-6666', NULL, NULL, '{"rua": "Rua Oscar Freire, 789", "bairro": "Jardins", "cidade": "São Paulo", "cep": "01426-001", "estado": "SP"}');
+CREATE TRIGGER update_sellers_updated_at
+    BEFORE UPDATE ON sellers
+    FOR EACH ROW
+    EXECUTE FUNCTION update_updated_at_column();
+
+-- Inserir dados de teste
+-- Inserir clientes de teste
+INSERT INTO clients (nome, email, senha, telefone, cpf, endereco) VALUES
+('Maria Santos', 'maria@cliente.com', '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj/RK.s5uDfm', '(11) 88888-8888', '123.456.789-01', '{"rua": "Av. Paulista, 1000", "bairro": "Bela Vista", "cidade": "São Paulo", "cep": "01310-100", "estado": "SP"}'),
+('Ana Costa', 'ana@cliente.com', '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj/RK.s5uDfm', '(11) 66666-6666', '987.654.321-09', '{"rua": "Rua Oscar Freire, 789", "bairro": "Jardins", "cidade": "São Paulo", "cep": "01426-001", "estado": "SP"}');
+
+-- Inserir vendedores de teste
+INSERT INTO sellers (nome, email, senha, telefone, cnpj, nome_empresa, endereco) VALUES
+('João Silva', 'joao@vendedor.com', '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj/RK.s5uDfm', '(11) 99999-9999', '12.345.678/0001-90', 'Supermercado Silva', '{"rua": "Rua das Flores, 123", "bairro": "Centro", "cidade": "São Paulo", "cep": "01234-567", "estado": "SP"}'),
+('Carlos Oliveira', 'carlos@vendedor.com', '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj/RK.s5uDfm', '(11) 77777-7777', '98.765.432/0001-10', 'Mercado Oliveira', '{"rua": "Rua Augusta, 456", "bairro": "Consolação", "cidade": "São Paulo", "cep": "01305-000", "estado": "SP"}');
 
 -- Habilitar RLS (Row Level Security) - opcional
-ALTER TABLE users ENABLE ROW LEVEL SECURITY;
+ALTER TABLE clients ENABLE ROW LEVEL SECURITY;
+ALTER TABLE sellers ENABLE ROW LEVEL SECURITY;
 
--- Política para permitir que usuários vejam apenas seus próprios dados
+-- Políticas para permitir que usuários vejam apenas seus próprios dados
 -- (descomente se quiser usar RLS)
--- CREATE POLICY "Users can view own data" ON users
+-- CREATE POLICY "Clients can view own data" ON clients
 --   FOR SELECT USING (auth.uid()::text = id::text);
 
--- CREATE POLICY "Users can update own data" ON users
+-- CREATE POLICY "Clients can update own data" ON clients
+--   FOR UPDATE USING (auth.uid()::text = id::text);
+
+-- CREATE POLICY "Sellers can view own data" ON sellers
+--   FOR SELECT USING (auth.uid()::text = id::text);
+
+-- CREATE POLICY "Sellers can update own data" ON sellers
 --   FOR UPDATE USING (auth.uid()::text = id::text);
