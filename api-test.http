@@ -1,0 +1,83 @@
+### Backend Compra Pronta - Testes da API
+### Use este arquivo com extensões como REST Client no VS Code
+
+@baseUrl = http://localhost:3000
+@token = 
+
+### Health Check
+GET {{baseUrl}}/health
+
+### Login - Vendedor
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "joao@vendedor.com",
+  "senha": "senha123"
+}
+
+### Login - Cliente
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "maria@cliente.com",
+  "senha": "senha123"
+}
+
+### Login - Credenciais inválidas
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "usuario@inexistente.com",
+  "senha": "senhaerrada"
+}
+
+### Verificar Token (substitua o token abaixo)
+POST {{baseUrl}}/api/auth/verify
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+Content-Type: application/json
+
+### Obter Perfil
+GET {{baseUrl}}/api/auth/profile
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+
+### Renovar Token
+POST {{baseUrl}}/api/auth/refresh
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+Content-Type: application/json
+
+### Listar Usuários
+GET {{baseUrl}}/api/auth/users
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+
+### Logout
+POST {{baseUrl}}/api/auth/logout
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+Content-Type: application/json
+
+### Teste sem token (deve retornar erro 401)
+GET {{baseUrl}}/api/auth/profile
+
+### Teste com token inválido (deve retornar erro 401)
+GET {{baseUrl}}/api/auth/profile
+Authorization: Bearer token_invalido_aqui
+
+### Teste de validação - email inválido
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "email_invalido",
+  "senha": "senha123"
+}
+
+### Teste de validação - senha muito curta
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "joao@vendedor.com",
+  "senha": "123"
+}
