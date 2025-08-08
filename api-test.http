@@ -1,7 +1,14 @@
 ### Backend Compra Pronta - Testes da API
 ### Use este arquivo com extensões como REST Client no VS Code
 
-@baseUrl = http://localhost:3000
+# Ambiente Local
+@baseUrlLocal = http://localhost:3000
+
+# Ambiente Produção (Render + Supabase)
+@baseUrlProd = https://backend-compra-pronta.onrender.com
+
+# URL ativa (altere conforme necessário)
+@baseUrl = {{baseUrlProd}}
 @token = 
 
 ### Health Check

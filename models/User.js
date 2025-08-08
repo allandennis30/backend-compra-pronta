@@ -1,155 +1,159 @@
 const bcrypt = require('bcryptjs');
+const supabase = require('../config/supabase');
 
 /**
- * Modelo de usuário com dados mockados
- * Em produção, isso seria substituído por um banco de dados
+ * Modelo de usuário usando Supabase
  */
 class User {
   constructor() {
-    // Dados mockados de usuários (senhas já hasheadas)
-    this.users = [
-      {
-        id: '1',
-        nome: 'João Silva',
-        email: 'joao@vendedor.com',
-        senha: '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj/RK.s5uDfm', // senha123
-        tipo: 'vendedor',
-        telefone: '(11) 99999-9999',
-        cnpj: '12.345.678/0001-90',
-        nomeEmpresa: 'Supermercado Silva',
-        endereco: {
-          rua: 'Rua das Flores, 123',
-          bairro: 'Centro',
-          cidade: 'São Paulo',
-          cep: '01234-567',
-          estado: 'SP'
-        },
-        ativo: true,
-        dataCriacao: '2024-01-15T10:00:00Z'
-      },
-      {
-        id: '2',
-        nome: 'Maria Santos',
-        email: 'maria@cliente.com',
-        senha: '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj/RK.s5uDfm', // senha123
-        tipo: 'cliente',
-        telefone: '(11) 88888-8888',
-        cpf: '123.456.789-00',
-        endereco: {
-          rua: 'Av. Paulista, 1000',
-          bairro: 'Bela Vista',
-          cidade: 'São Paulo',
-          cep: '01310-100',
-          estado: 'SP'
-        },
-        ativo: true,
-        dataCriacao: '2024-01-20T14:30:00Z'
-      },
-      {
-        id: '3',
-        nome: 'Carlos Oliveira',
-        email: 'carlos@vendedor.com',
-        senha: '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj/RK.s5uDfm', // senha123
-        tipo: 'vendedor',
-        telefone: '(11) 77777-7777',
-        cnpj: '98.765.432/0001-10',
-        nomeEmpresa: 'Mercado Oliveira',
-        endereco: {
-          rua: 'Rua Augusta, 456',
-          bairro: 'Consolação',
-          cidade: 'São Paulo',
-          cep: '01305-000',
-          estado: 'SP'
-        },
-        ativo: true,
-        dataCriacao: '2024-01-10T09:15:00Z'
-      },
-      {
-        id: '4',
-        nome: 'Ana Costa',
-        email: 'ana@cliente.com',
-        senha: '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj/RK.s5uDfm', // senha123
-        tipo: 'cliente',
-        telefone: '(11) 66666-6666',
-        cpf: '987.654.321-00',
-        endereco: {
-          rua: 'Rua Oscar Freire, 789',
-          bairro: 'Jardins',
-          cidade: 'São Paulo',
-          cep: '01426-001',
-          estado: 'SP'
-        },
-        ativo: true,
-        dataCriacao: '2024-01-25T16:45:00Z'
-      }
-    ];
+    this.tableName = 'users';
   }
 
   /**
-   * Buscar usuário por email
+   * Busca usuário por email
+   * @param {string} email 
+   * @returns {Object|null}
    */
   async findByEmail(email) {
-    return this.users.find(user => user.email === email && user.ativo);
+    try {
+      const { data, error } = await supabase
+        .from(this.tableName)
+        .select('*')
+        .eq('email', email)
+        .single();
+
+      if (error) {
+        if (error.code === 'PGRST116') {
+          return null; // Usuário não encontrado
+        }
+        throw error;
+      }
+
+      return data;
+    } catch (error) {
+      console.error('Erro ao buscar usuário por email:', error);
+      throw error;
+    }
   }
 
   /**
-   * Buscar usuário por ID
+   * Busca usuário por ID
+   * @param {string} id 
+   * @returns {Object|null}
    */
   async findById(id) {
-    return this.users.find(user => user.id === id && user.ativo);
+    try {
+      const { data, error } = await supabase
+        .from(this.tableName)
+        .select('*')
+        .eq('id', id)
+        .single();
+
+      if (error) {
+        if (error.code === 'PGRST116') {
+          return null; // Usuário não encontrado
+        }
+        throw error;
+      }
+
+      return data;
+    } catch (error) {
+      console.error('Erro ao buscar usuário por ID:', error);
+      throw error;
+    }
   }
 
   /**
-   * Verificar senha
+   * Verifica se a senha está correta
+   * @param {string} plainPassword 
+   * @param {string} hashedPassword 
+   * @returns {boolean}
    */
   async verifyPassword(plainPassword, hashedPassword) {
     return await bcrypt.compare(plainPassword, hashedPassword);
   }
 
   /**
-   * Hash da senha (para novos usuários)
+   * Gera hash da senha
+   * @param {string} password 
+   * @returns {string}
    */
   async hashPassword(password) {
-    const rounds = parseInt(process.env.BCRYPT_ROUNDS) || 12;
-    return await bcrypt.hash(password, rounds);
+    const saltRounds = parseInt(process.env.BCRYPT_ROUNDS) || 12;
+    return await bcrypt.hash(password, saltRounds);
   }
 
   /**
-   * Criar novo usuário (para futuras implementações)
+   * Cria um novo usuário
+   * @param {Object} userData 
+   * @returns {Object}
    */
   async create(userData) {
-    const newUser = {
-      id: (this.users.length + 1).toString(),
-      ...userData,
-      senha: await this.hashPassword(userData.senha),
-      ativo: true,
-      dataCriacao: new Date().toISOString()
-    };
-    
-    this.users.push(newUser);
-    return newUser;
+    try {
+      // Hash da senha
+      const hashedPassword = await this.hashPassword(userData.senha);
+      
+      const newUser = {
+        nome: userData.nome,
+        email: userData.email,
+        senha: hashedPassword,
+        tipo: userData.tipo || 'cliente',
+        telefone: userData.telefone,
+        cpf: userData.cpf || null,
+        cnpj: userData.cnpj || null,
+        nome_empresa: userData.nomeEmpresa || null,
+        endereco: userData.endereco || {},
+        ativo: true,
+        data_criacao: new Date().toISOString()
+      };
+
+      const { data, error } = await supabase
+        .from(this.tableName)
+        .insert([newUser])
+        .select()
+        .single();
+
+      if (error) {
+        throw error;
+      }
+
+      return this.sanitizeUser(data);
+    } catch (error) {
+      console.error('Erro ao criar usuário:', error);
+      throw error;
+    }
   }
 
   /**
-   * Listar todos os usuários (sem senhas)
+   * Busca todos os usuários
+   * @returns {Array}
    */
   async findAll() {
-    return this.users
-      .filter(user => user.ativo)
-      .map(user => {
-        const { senha, ...userWithoutPassword } = user;
-        return userWithoutPassword;
-      });
+    try {
+      const { data, error } = await supabase
+        .from(this.tableName)
+        .select('*')
+        .eq('ativo', true);
+
+      if (error) {
+        throw error;
+      }
+
+      return data.map(user => this.sanitizeUser(user));
+    } catch (error) {
+      console.error('Erro ao buscar usuários:', error);
+      throw error;
+    }
   }
 
   /**
-   * Remover dados sensíveis do usuário
+   * Remove dados sensíveis do usuário
+   * @param {Object} user 
+   * @returns {Object}
    */
   sanitizeUser(user) {
-    if (!user) return null;
-    
-    const { senha, ...sanitizedUser } = user;
-    return sanitizedUser;
+    const { senha, ...userWithoutPassword } = user;
+    return userWithoutPassword;
   }
 }
 
