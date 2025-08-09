@@ -44,6 +44,8 @@ const verifyToken = (req, res, next) => {
     req.user = {
       id: decoded.id,
       email: decoded.email,
+      nome: decoded.nome,
+      isSeller: decoded.isSeller,
       tipo: decoded.tipo,
       iat: decoded.iat,
       exp: decoded.exp
@@ -78,7 +80,7 @@ const verifyToken = (req, res, next) => {
  * Middleware para verificar se o usuário é vendedor
  */
 const requireVendedor = (req, res, next) => {
-  if (req.user.tipo !== 'vendedor') {
+  if (!req.user.isSeller) {
     return res.status(403).json({
       error: 'Acesso negado',
       message: 'Apenas vendedores podem acessar este recurso'
@@ -91,7 +93,7 @@ const requireVendedor = (req, res, next) => {
  * Middleware para verificar se o usuário é cliente
  */
 const requireCliente = (req, res, next) => {
-  if (req.user.tipo !== 'cliente') {
+  if (req.user.isSeller) {
     return res.status(403).json({
       error: 'Acesso negado',
       message: 'Apenas clientes podem acessar este recurso'

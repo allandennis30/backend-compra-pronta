@@ -1,8 +1,7 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
 const { body, validationResult } = require('express-validator');
-const Client = require('../models/Client');
-const Seller = require('../models/Seller');
+const User = require('../models/User');
 const { verifyToken } = require('../middleware/auth');
 const { asyncHandler, createError } = require('../middleware/errorHandler');
 
@@ -106,11 +105,13 @@ const registerSellerValidation = [
 /**
  * Gerar JWT token
  */
-const generateToken = (user, userType) => {
+const generateToken = (user) => {
   const payload = {
     id: user.id,
     email: user.email,
-    tipo: userType // 'cliente' ou 'vendedor'
+    nome: user.nome,
+    isSeller: user.isSeller,
+    tipo: user.isSeller ? 'vendedor' : 'cliente'
   };
   
   return jwt.sign(payload, process.env.JWT_SECRET, {
@@ -121,34 +122,21 @@ const generateToken = (user, userType) => {
 };
 
 /**
- * Buscar usuário por email em ambas as tabelas
+ * Buscar usuário por email
  */
 const findUserByEmail = async (email) => {
-  // Primeiro tenta encontrar como cliente
-  let user = await Client.findByEmail(email);
+  const user = await User.findByEmail(email);
   if (user) {
-    return { user, type: 'cliente' };
+    return { user, type: user.isSeller ? 'vendedor' : 'cliente' };
   }
-  
-  // Se não encontrou como cliente, tenta como vendedor
-  user = await Seller.findByEmail(email);
-  if (user) {
-    return { user, type: 'vendedor' };
-  }
-  
   return null;
 };
 
 /**
- * Buscar usuário por ID em ambas as tabelas
+ * Buscar usuário por ID
  */
-const findUserById = async (id, type) => {
-  if (type === 'cliente') {
-    return await Client.findById(id);
-  } else if (type === 'vendedor') {
-    return await Seller.findById(id);
-  }
-  return null;
+const findUserById = async (id) => {
+  return await User.findById(id);
 };
 
 /**
@@ -167,7 +155,7 @@ router.post('/login', loginValidation, asyncHandler(async (req, res) => {
 
   const { email, senha } = req.body;
 
-  // Buscar usuário em ambas as tabelas
+  // Buscar usuário
   const userResult = await findUserByEmail(email);
   if (!userResult) {
     return res.status(401).json({
@@ -177,10 +165,9 @@ router.post('/login', loginValidation, asyncHandler(async (req, res) => {
   }
 
   const { user, type } = userResult;
-  const Model = type === 'cliente' ? Client : Seller;
 
   // Verificar senha
-  const isValidPassword = await Model.verifyPassword(senha, user.senha);
+  const isValidPassword = await user.verifyPassword(senha);
   if (!isValidPassword) {
     return res.status(401).json({
       error: 'Credenciais inválidas',
@@ -189,10 +176,10 @@ router.post('/login', loginValidation, asyncHandler(async (req, res) => {
   }
 
   // Gerar token
-  const token = generateToken(user, type);
+  const token = generateToken(user);
   
   // Remover dados sensíveis
-  const sanitizedUser = type === 'cliente' ? Client.sanitizeClient(user) : Seller.sanitizeSeller(user);
+  const sanitizedUser = user.toJSON();
 
   res.status(200).json({
     message: 'Login realizado com sucesso',
@@ -219,7 +206,7 @@ router.post('/register/client', registerClientValidation, asyncHandler(async (re
 
   const { nome, email, senha, telefone, cpf, endereco, latitude, longitude } = req.body;
 
-  // Verificar se o email já existe em ambas as tabelas
+  // Verificar se o email já existe
   const existingUser = await findUserByEmail(email);
   if (existingUser) {
     return res.status(409).json({
@@ -237,16 +224,17 @@ router.post('/register/client', registerClientValidation, asyncHandler(async (re
     cpf: cpf || null,
     endereco: endereco || {},
     latitude: latitude || 0,
-    longitude: longitude || 0
+    longitude: longitude || 0,
+    isSeller: false
   };
 
-  const newClient = await Client.create(clientData);
+  const newClient = await User.create(clientData);
   
   // Gerar token
-  const token = generateToken(newClient, 'cliente');
+  const token = generateToken(newClient);
   
   // Remover dados sensíveis
-  const sanitizedClient = Client.sanitizeClient(newClient);
+  const sanitizedClient = newClient.toJSON();
 
   res.status(201).json({
     message: 'Cliente criado com sucesso',
@@ -273,7 +261,7 @@ router.post('/register/seller', registerSellerValidation, asyncHandler(async (re
 
   const { nome, email, senha, telefone, cnpj, nomeEmpresa, endereco, latitude, longitude } = req.body;
 
-  // Verificar se o email já existe em ambas as tabelas
+  // Verificar se o email já existe
   const existingUser = await findUserByEmail(email);
   if (existingUser) {
     return res.status(409).json({
@@ -283,7 +271,8 @@ router.post('/register/seller', registerSellerValidation, asyncHandler(async (re
   }
 
   // Verificar se o CNPJ já existe
-  const existingSeller = await Seller.findByCnpj(cnpj);
+  const existingSellers = await User.findSellers();
+  const existingSeller = existingSellers.find(seller => seller.cnpj === cnpj);
   if (existingSeller) {
     return res.status(409).json({
       error: 'CNPJ já cadastrado',
@@ -298,19 +287,20 @@ router.post('/register/seller', registerSellerValidation, asyncHandler(async (re
     senha,
     telefone: telefone || '',
     cnpj,
-    nomeEmpresa,
+    nome_empresa: nomeEmpresa,
     endereco: endereco || {},
     latitude: latitude || 0,
-    longitude: longitude || 0
+    longitude: longitude || 0,
+    isSeller: true
   };
 
-  const newSeller = await Seller.create(sellerData);
+  const newSeller = await User.create(sellerData);
   
   // Gerar token
-  const token = generateToken(newSeller, 'vendedor');
+  const token = generateToken(newSeller);
   
   // Remover dados sensíveis
-  const sanitizedSeller = Seller.sanitizeSeller(newSeller);
+  const sanitizedSeller = newSeller.toJSON();
 
   res.status(201).json({
     message: 'Vendedor criado com sucesso',
@@ -326,23 +316,23 @@ router.post('/register/seller', registerSellerValidation, asyncHandler(async (re
  */
 router.post('/verify', verifyToken, asyncHandler(async (req, res) => {
   // Se chegou até aqui, o token é válido
-  const user = await findUserById(req.user.id, req.user.tipo);
+  const user = await findUserById(req.user.id);
   
   if (!user) {
     throw createError('Usuário não encontrado', 404);
   }
 
-  const sanitizedUser = req.user.tipo === 'cliente' ? 
-    Client.sanitizeClient(user) : 
-    Seller.sanitizeSeller(user);
+  const sanitizedUser = user.toJSON();
+  const userType = user.isSeller ? 'vendedor' : 'cliente';
 
   res.status(200).json({
     message: 'Token válido',
-    user: { ...sanitizedUser, tipo: req.user.tipo },
+    user: { ...sanitizedUser, tipo: userType },
     tokenInfo: {
       id: req.user.id,
       email: req.user.email,
-      tipo: req.user.tipo,
+      isSeller: req.user.isSeller,
+      tipo: userType,
       iat: new Date(req.user.iat * 1000).toISOString(),
       exp: new Date(req.user.exp * 1000).toISOString()
     }
@@ -354,22 +344,21 @@ router.post('/verify', verifyToken, asyncHandler(async (req, res) => {
  * Renovar token
  */
 router.post('/refresh', verifyToken, asyncHandler(async (req, res) => {
-  const user = await findUserById(req.user.id, req.user.tipo);
+  const user = await findUserById(req.user.id);
   
   if (!user) {
     throw createError('Usuário não encontrado', 404);
   }
 
   // Gerar novo token
-  const newToken = generateToken(user, req.user.tipo);
-  const sanitizedUser = req.user.tipo === 'cliente' ? 
-    Client.sanitizeClient(user) : 
-    Seller.sanitizeSeller(user);
+  const newToken = generateToken(user);
+  const sanitizedUser = user.toJSON();
+  const userType = user.isSeller ? 'vendedor' : 'cliente';
 
   res.status(200).json({
     message: 'Token renovado com sucesso',
     token: newToken,
-    user: { ...sanitizedUser, tipo: req.user.tipo },
+    user: { ...sanitizedUser, tipo: userType },
     expiresIn: process.env.JWT_EXPIRES_IN || '24h'
   });
 }));
@@ -379,19 +368,18 @@ router.post('/refresh', verifyToken, asyncHandler(async (req, res) => {
  * Obter perfil do usuário autenticado
  */
 router.get('/profile', verifyToken, asyncHandler(async (req, res) => {
-  const user = await findUserById(req.user.id, req.user.tipo);
+  const user = await findUserById(req.user.id);
   
   if (!user) {
     throw createError('Usuário não encontrado', 404);
   }
 
-  const sanitizedUser = req.user.tipo === 'cliente' ? 
-    Client.sanitizeClient(user) : 
-    Seller.sanitizeSeller(user);
+  const sanitizedUser = user.toJSON();
+  const userType = user.isSeller ? 'vendedor' : 'cliente';
 
   res.status(200).json({
     message: 'Perfil obtido com sucesso',
-    user: { ...sanitizedUser, tipo: req.user.tipo }
+    user: { ...sanitizedUser, tipo: userType }
   });
 }));
 
@@ -400,11 +388,11 @@ router.get('/profile', verifyToken, asyncHandler(async (req, res) => {
  * Listar todos os clientes (rota protegida para teste)
  */
 router.get('/clients', verifyToken, asyncHandler(async (req, res) => {
-  const clients = await Client.findAll();
+  const clients = await User.findClients();
   
   res.status(200).json({
     message: 'Clientes obtidos com sucesso',
-    clients: clients.map(client => ({ ...client, tipo: 'cliente' })),
+    clients: clients.map(client => ({ ...client.toJSON(), tipo: 'cliente' })),
     total: clients.length
   });
 }));
@@ -414,11 +402,11 @@ router.get('/clients', verifyToken, asyncHandler(async (req, res) => {
  * Listar todos os vendedores (rota protegida para teste)
  */
 router.get('/sellers', verifyToken, asyncHandler(async (req, res) => {
-  const sellers = await Seller.findAll();
+  const sellers = await User.findSellers();
   
   res.status(200).json({
     message: 'Vendedores obtidos com sucesso',
-    sellers: sellers.map(seller => ({ ...seller, tipo: 'vendedor' })),
+    sellers: sellers.map(seller => ({ ...seller.toJSON(), tipo: 'vendedor' })),
     total: sellers.length
   });
 }));
@@ -428,17 +416,18 @@ router.get('/sellers', verifyToken, asyncHandler(async (req, res) => {
  * Listar todos os usuários (clientes e vendedores)
  */
 router.get('/users', verifyToken, asyncHandler(async (req, res) => {
-  const clients = await Client.findAll();
-  const sellers = await Seller.findAll();
+  const allUsers = await User.findAll();
+  const clients = allUsers.filter(user => !user.isSeller);
+  const sellers = allUsers.filter(user => user.isSeller);
   
-  const allUsers = [
-    ...clients.map(client => ({ ...client, tipo: 'cliente' })),
-    ...sellers.map(seller => ({ ...seller, tipo: 'vendedor' }))
-  ];
+  const formattedUsers = allUsers.map(user => ({
+    ...user.toJSON(),
+    tipo: user.isSeller ? 'vendedor' : 'cliente'
+  }));
   
   res.status(200).json({
     message: 'Usuários obtidos com sucesso',
-    users: allUsers,
+    users: formattedUsers,
     total: allUsers.length,
     breakdown: {
       clients: clients.length,
