@@ -1,7 +1,6 @@
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
-const rateLimit = require('express-rate-limit');
 require('dotenv').config();
 
 const authRoutes = require('./routes/auth');
@@ -19,33 +18,27 @@ if (process.env.NODE_ENV === 'production') {
 // Configurações de segurança
 app.use(helmet());
 
-// Rate limiting
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutos
-  max: 100, // máximo 100 requests por IP
-  message: {
-    error: 'Muitas tentativas. Tente novamente em 15 minutos.'
-  },
-  standardHeaders: true,
-  legacyHeaders: false
-});
-
-app.use(limiter);
-
-// Rate limiting específico para login
-const loginLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutos
-  max: 5, // máximo 5 tentativas de login por IP
-  message: {
-    error: 'Muitas tentativas de login. Tente novamente em 15 minutos.'
-  },
-  skipSuccessfulRequests: true
-});
+// Rate limiting será aplicado apenas nas rotas específicas se necessário
 
 // CORS
-const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:3000'];
+const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || [
+  'http://localhost:3000',
+  'http://localhost:8080',
+  'http://localhost:3001',
+  'http://localhost:8081',
+  'http://localhost:9000'
+];
 app.use(cors({
-  origin: allowedOrigins,
+  origin: function (origin, callback) {
+    // Permitir requisições sem origin (como apps móveis)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(null, true); // Permitir todas as origens em desenvolvimento
+    }
+  },
   credentials: true
 }));
 
@@ -54,7 +47,7 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Rotas
-app.use('/api/auth', loginLimiter, authRoutes);
+app.use('/api/auth', authRoutes);
 
 // Rota de health check
 app.get('/health', (req, res) => {

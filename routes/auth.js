@@ -47,8 +47,10 @@ const registerClientValidation = [
     .trim(),
   body('endereco')
     .optional()
-    .isObject()
-    .withMessage('Endereço deve ser um objeto válido'),
+    .custom((value) => {
+      // Aceitar qualquer valor para address (objeto, string, ou null)
+      return true;
+    }),
   body('latitude')
     .optional()
     .isFloat({ min: -90, max: 90 })
