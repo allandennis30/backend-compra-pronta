@@ -46,6 +46,28 @@ app.use(cors({
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
+// Middleware de logging para todas as requisições
+app.use((req, res, next) => {
+  console.log('🌐 [HTTP_REQUEST]', new Date().toISOString());
+  console.log('📍 [HTTP_REQUEST]', req.method, req.url);
+  console.log('🌐 [HTTP_REQUEST] IP:', req.ip);
+  console.log('📋 [HTTP_REQUEST] Headers:', JSON.stringify(req.headers, null, 2));
+  
+  if (req.body && Object.keys(req.body).length > 0) {
+    console.log('📝 [HTTP_REQUEST] Body:', JSON.stringify(req.body, null, 2));
+  }
+  
+  // Log da resposta
+  const originalSend = res.send;
+  res.send = function(data) {
+    console.log('📤 [HTTP_RESPONSE] Status:', res.statusCode);
+    console.log('📤 [HTTP_RESPONSE] Response:', data);
+    originalSend.call(this, data);
+  };
+  
+  next();
+});
+
 // Rotas
 app.use('/api/auth', authRoutes);
 

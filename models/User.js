@@ -77,9 +77,14 @@ class User {
    */
   static async create(userData) {
     try {
+      console.log('🔄 [USER.CREATE] Iniciando criação de usuário');
+      console.log('📝 [USER.CREATE] Dados recebidos:', JSON.stringify(userData, null, 2));
+      
       // Hash da senha
+      console.log('🔐 [USER.CREATE] Fazendo hash da senha...');
       const saltRounds = 12;
       const hashedPassword = await bcrypt.hash(userData.senha, saltRounds);
+      console.log('✅ [USER.CREATE] Senha hashada com sucesso');
 
       const newUser = {
         nome: userData.nome,
@@ -95,6 +100,9 @@ class User {
         isSeller: userData.isSeller || false,
         ativo: true
       };
+      
+      console.log('📋 [USER.CREATE] Dados preparados para inserção:', JSON.stringify(newUser, null, 2));
+      console.log('🔄 [USER.CREATE] Chamando Supabase insert...');
 
       const { data, error } = await supabase
         .from('users')
@@ -103,12 +111,26 @@ class User {
         .single();
 
       if (error) {
+        console.error('❌ [USER.CREATE] Erro do Supabase:', error);
+        console.error('❌ [USER.CREATE] Código do erro:', error.code);
+        console.error('❌ [USER.CREATE] Mensagem do erro:', error.message);
+        console.error('❌ [USER.CREATE] Detalhes do erro:', error.details);
         throw error;
       }
 
-      return new User(data);
+      console.log('✅ [USER.CREATE] Usuário criado no Supabase:', data.id);
+      console.log('🔄 [USER.CREATE] Criando instância User...');
+      
+      const user = new User(data);
+      console.log('✅ [USER.CREATE] Instância User criada com sucesso');
+      
+      return user;
     } catch (error) {
-      console.error('Erro ao criar usuário:', error);
+      console.error('💥 [USER.CREATE] ERRO CRÍTICO durante criação:', error);
+      console.error('💥 [USER.CREATE] Stack trace:', error.stack);
+      console.error('💥 [USER.CREATE] Tipo do erro:', error.constructor.name);
+      console.error('💥 [USER.CREATE] Dados que causaram erro:', JSON.stringify(userData, null, 2));
+      
       throw error;
     }
   }

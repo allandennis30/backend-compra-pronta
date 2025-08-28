@@ -146,49 +146,73 @@ const findUserById = async (id) => {
  * Autenticar usuário
  */
 router.post('/login', loginValidation, asyncHandler(async (req, res) => {
-  // Verificar erros de validação
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    return res.status(400).json({
-      error: 'Dados inválidos',
-      details: errors.array()
-    });
-  }
-
-  const { email, senha } = req.body;
-
-  // Buscar usuário
-  const userResult = await findUserByEmail(email);
-  if (!userResult) {
-    return res.status(401).json({
-      error: 'Credenciais inválidas',
-      message: 'Email ou senha incorretos'
-    });
-  }
-
-  const { user, type } = userResult;
-
-  // Verificar senha
-  const isValidPassword = await user.verifyPassword(senha);
-  if (!isValidPassword) {
-    return res.status(401).json({
-      error: 'Credenciais inválidas',
-      message: 'Email ou senha incorretos'
-    });
-  }
-
-  // Gerar token
-  const token = generateToken(user);
+  console.log('🔐 [LOGIN] Iniciando processo de login');
+  console.log('📝 [LOGIN] Dados recebidos:', JSON.stringify(req.body, null, 2));
   
-  // Remover dados sensíveis
-  const sanitizedUser = user.toJSON();
+  try {
+    // Verificar erros de validação
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      console.log('❌ [LOGIN] Erros de validação:', errors.array());
+      return res.status(400).json({
+        error: 'Dados inválidos',
+        details: errors.array()
+      });
+    }
 
-  res.status(200).json({
-    message: 'Login realizado com sucesso',
-    token,
-    user: { ...sanitizedUser, tipo: type },
-    expiresIn: process.env.JWT_EXPIRES_IN || '24h'
-  });
+    const { email, senha } = req.body;
+    console.log('✅ [LOGIN] Validação passou, email:', email);
+
+    // Buscar usuário
+    console.log('🔍 [LOGIN] Buscando usuário por email:', email);
+    const userResult = await findUserByEmail(email);
+    if (!userResult) {
+      console.log('❌ [LOGIN] Usuário não encontrado:', email);
+      return res.status(401).json({
+        error: 'Credenciais inválidas',
+        message: 'Email ou senha incorretos'
+      });
+    }
+
+    const { user, type } = userResult;
+    console.log('✅ [LOGIN] Usuário encontrado:', user.id, 'Tipo:', type);
+
+    // Verificar senha
+    console.log('🔐 [LOGIN] Verificando senha...');
+    const isValidPassword = await user.verifyPassword(senha);
+    if (!isValidPassword) {
+      console.log('❌ [LOGIN] Senha incorreta para usuário:', email);
+      return res.status(401).json({
+        error: 'Credenciais inválidas',
+        message: 'Email ou senha incorretos'
+      });
+    }
+    console.log('✅ [LOGIN] Senha válida para usuário:', email);
+
+    // Gerar token
+    console.log('🔑 [LOGIN] Gerando token JWT...');
+    const token = generateToken(user);
+    console.log('✅ [LOGIN] Token gerado com sucesso');
+    
+    // Remover dados sensíveis
+    const sanitizedUser = user.toJSON();
+    console.log('🧹 [LOGIN] Dados sanitizados, removendo senha');
+
+    console.log('🎉 [LOGIN] Login realizado com sucesso para:', email);
+    res.status(200).json({
+      message: 'Login realizado com sucesso',
+      token,
+      user: { ...sanitizedUser, tipo: type },
+      expiresIn: process.env.JWT_EXPIRES_IN || '24h'
+    });
+  } catch (error) {
+    console.error('💥 [LOGIN] ERRO CRÍTICO durante login:', error);
+    console.error('💥 [LOGIN] Stack trace:', error.stack);
+    console.error('💥 [LOGIN] Dados que causaram erro:', JSON.stringify(req.body, null, 2));
+    
+    // Re-throw para o errorHandler processar
+    throw error;
+  }
 }));
 
 /**
@@ -196,54 +220,78 @@ router.post('/login', loginValidation, asyncHandler(async (req, res) => {
  * Registrar novo cliente
  */
 router.post('/register/client', registerClientValidation, asyncHandler(async (req, res) => {
-  // Verificar erros de validação
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    return res.status(400).json({
-      error: 'Dados inválidos',
-      message: 'Verifique os dados fornecidos',
-      details: errors.array()
-    });
-  }
-
-  const { nome, email, senha, telefone, cpf, endereco, latitude, longitude } = req.body;
-
-  // Verificar se o email já existe
-  const existingUser = await findUserByEmail(email);
-  if (existingUser) {
-    return res.status(409).json({
-      error: 'Email já cadastrado',
-      message: 'Este email já está em uso'
-    });
-  }
-
-  // Criar novo cliente
-  const clientData = {
-    nome,
-    email,
-    senha,
-    telefone: telefone || '',
-    cpf: cpf || null,
-    endereco: endereco || {},
-    latitude: latitude || 0,
-    longitude: longitude || 0,
-    isSeller: false
-  };
-
-  const newClient = await User.create(clientData);
+  console.log('🚀 [REGISTER/CLIENT] Iniciando cadastro de cliente');
+  console.log('📝 [REGISTER/CLIENT] Dados recebidos:', JSON.stringify(req.body, null, 2));
   
-  // Gerar token
-  const token = generateToken(newClient);
-  
-  // Remover dados sensíveis
-  const sanitizedClient = newClient.toJSON();
+  try {
+    // Verificar erros de validação
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      console.log('❌ [REGISTER/CLIENT] Erros de validação:', errors.array());
+      return res.status(400).json({
+        error: 'Dados inválidos',
+        message: 'Verifique os dados fornecidos',
+        details: errors.array()
+      });
+    }
 
-  res.status(201).json({
-    message: 'Cliente criado com sucesso',
-    token,
-    user: { ...sanitizedClient, tipo: 'cliente' },
-    expiresIn: process.env.JWT_EXPIRES_IN || '24h'
-  });
+    const { nome, email, senha, telefone, cpf, endereco, latitude, longitude } = req.body;
+    console.log('✅ [REGISTER/CLIENT] Validação passou, dados extraídos:', { nome, email, telefone, cpf, latitude, longitude });
+
+    // Verificar se o email já existe
+    console.log('🔍 [REGISTER/CLIENT] Verificando se email já existe:', email);
+    const existingUser = await findUserByEmail(email);
+    if (existingUser) {
+      console.log('❌ [REGISTER/CLIENT] Email já cadastrado:', email);
+      return res.status(409).json({
+        error: 'Email já cadastrado',
+        message: 'Este email já está em uso'
+      });
+    }
+    console.log('✅ [REGISTER/CLIENT] Email disponível:', email);
+
+    // Criar novo cliente
+    const clientData = {
+      nome,
+      email,
+      senha,
+      telefone: telefone || '',
+      cpf: cpf || null,
+      endereco: endereco || {},
+      latitude: latitude || 0,
+      longitude: longitude || 0,
+      isSeller: false
+    };
+    console.log('📋 [REGISTER/CLIENT] Dados do cliente preparados:', JSON.stringify(clientData, null, 2));
+
+    console.log('🔄 [REGISTER/CLIENT] Chamando User.create()...');
+    const newClient = await User.create(clientData);
+    console.log('✅ [REGISTER/CLIENT] Cliente criado com sucesso:', newClient.id);
+    
+    // Gerar token
+    console.log('🔑 [REGISTER/CLIENT] Gerando token JWT...');
+    const token = generateToken(newClient);
+    console.log('✅ [REGISTER/CLIENT] Token gerado com sucesso');
+    
+    // Remover dados sensíveis
+    const sanitizedClient = newClient.toJSON();
+    console.log('🧹 [REGISTER/CLIENT] Dados sanitizados, removendo senha');
+
+    console.log('🎉 [REGISTER/CLIENT] Cadastro finalizado com sucesso para:', email);
+    res.status(201).json({
+      message: 'Cliente criado com sucesso',
+      token,
+      user: { ...sanitizedClient, tipo: 'cliente' },
+      expiresIn: process.env.JWT_EXPIRES_IN || '24h'
+    });
+  } catch (error) {
+    console.error('💥 [REGISTER/CLIENT] ERRO CRÍTICO durante cadastro:', error);
+    console.error('💥 [REGISTER/CLIENT] Stack trace:', error.stack);
+    console.error('💥 [REGISTER/CLIENT] Dados que causaram erro:', JSON.stringify(req.body, null, 2));
+    
+    // Re-throw para o errorHandler processar
+    throw error;
+  }
 }));
 
 /**

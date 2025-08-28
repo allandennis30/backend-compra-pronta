@@ -2,17 +2,31 @@
  * Middleware centralizado para tratamento de erros
  */
 const errorHandler = (err, req, res, next) => {
-  console.error('Erro capturado:', {
-    message: err.message,
-    stack: err.stack,
-    url: req.url,
-    method: req.method,
-    ip: req.ip,
-    timestamp: new Date().toISOString()
-  });
+  console.error('🚨 [ERROR_HANDLER] Erro capturado pelo middleware');
+  console.error('📍 [ERROR_HANDLER] URL:', req.url);
+  console.error('🔧 [ERROR_HANDLER] Método:', req.method);
+  console.error('🌐 [ERROR_HANDLER] IP:', req.ip);
+  console.error('⏰ [ERROR_HANDLER] Timestamp:', new Date().toISOString());
+  console.error('📝 [ERROR_HANDLER] Body da requisição:', JSON.stringify(req.body, null, 2));
+  console.error('📋 [ERROR_HANDLER] Headers:', JSON.stringify(req.headers, null, 2));
+  console.error('💥 [ERROR_HANDLER] Mensagem do erro:', err.message);
+  console.error('🔍 [ERROR_HANDLER] Tipo do erro:', err.constructor.name);
+  console.error('📚 [ERROR_HANDLER] Stack trace:', err.stack);
+  
+  // Log adicional para erros específicos
+  if (err.code) {
+    console.error('🔢 [ERROR_HANDLER] Código do erro:', err.code);
+  }
+  if (err.details) {
+    console.error('📋 [ERROR_HANDLER] Detalhes do erro:', err.details);
+  }
+  if (err.hint) {
+    console.error('💡 [ERROR_HANDLER] Dica do erro:', err.hint);
+  }
 
   // Erro de validação do express-validator
   if (err.name === 'ValidationError') {
+    console.log('✅ [ERROR_HANDLER] Tratando como erro de validação');
     return res.status(400).json({
       error: 'Dados inválidos',
       message: err.message,
@@ -22,6 +36,7 @@ const errorHandler = (err, req, res, next) => {
 
   // Erro de JWT
   if (err.name === 'JsonWebTokenError') {
+    console.log('✅ [ERROR_HANDLER] Tratando como erro de JWT');
     return res.status(401).json({
       error: 'Token inválido',
       message: 'Token malformado ou inválido'
@@ -30,6 +45,7 @@ const errorHandler = (err, req, res, next) => {
 
   // Token expirado
   if (err.name === 'TokenExpiredError') {
+    console.log('✅ [ERROR_HANDLER] Tratando como erro de token expirado');
     return res.status(401).json({
       error: 'Token expirado',
       message: 'Faça login novamente'
@@ -38,6 +54,7 @@ const errorHandler = (err, req, res, next) => {
 
   // Erro de sintaxe JSON
   if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
+    console.log('✅ [ERROR_HANDLER] Tratando como erro de sintaxe JSON');
     return res.status(400).json({
       error: 'JSON inválido',
       message: 'Verifique a sintaxe do JSON enviado'
@@ -46,6 +63,7 @@ const errorHandler = (err, req, res, next) => {
 
   // Erro personalizado com status
   if (err.status) {
+    console.log('✅ [ERROR_HANDLER] Tratando como erro personalizado com status:', err.status);
     return res.status(err.status).json({
       error: err.message || 'Erro na requisição',
       ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
@@ -53,6 +71,7 @@ const errorHandler = (err, req, res, next) => {
   }
 
   // Erro interno do servidor
+  console.log('❌ [ERROR_HANDLER] Tratando como erro interno do servidor (500)');
   res.status(500).json({
     error: 'Erro interno do servidor',
     message: process.env.NODE_ENV === 'development' 
