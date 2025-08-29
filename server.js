@@ -4,6 +4,7 @@ const helmet = require('helmet');
 require('dotenv').config();
 
 const authRoutes = require('./routes/auth');
+const productRoutes = require('./routes/products');
 const { errorHandler } = require('./middleware/errorHandler');
 const { initializeDatabase } = require('./database/init');
 
@@ -70,6 +71,7 @@ app.use((req, res, next) => {
 
 // Rotas
 app.use('/api/auth', authRoutes);
+app.use('/api/products', productRoutes);
 
 // Rota de health check
 app.get('/health', (req, res) => {
