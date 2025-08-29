@@ -2,7 +2,7 @@ const express = require('express');
 const { body, validationResult } = require('express-validator');
 const { verifyToken } = require('../middleware/auth');
 const { asyncHandler, createError } = require('../middleware/errorHandler');
-const { supabase } = require('../config/supabase');
+const supabase = require('../config/supabase');
 
 const router = express.Router();
 
@@ -87,19 +87,18 @@ router.post('/', verifyToken, productValidation, asyncHandler(async (req, res) =
   } = req.body;
 
   try {
-    // Verificar se o código de barras já existe
-    console.log('🔍 [PRODUCTS/CREATE] Verificando código de barras:', barcode);
-    const { data: existingProduct, error: checkError } = await supabase
-      .from('products')
-      .select('id, name')
-      .eq('barcode', barcode)
-      .eq('seller_id', req.user.id)
-      .single();
-
-    if (checkError && checkError.code !== 'PGRST116') {
-      console.error('❌ [PRODUCTS/CREATE] Erro ao verificar código de barras:', checkError);
-      throw createError('Erro ao verificar código de barras', 500);
-    }
+    // Mock temporário para teste local
+    console.log('✅ [PRODUCTS/CREATE] Usando mock temporário para teste');
+    
+    // Verificar se o código de barras já existe (mock)
+    const mockExistingProducts = [
+      { id: 'prod_001', barcode: '7891234567890', name: 'Maçã Fuji' },
+      { id: 'prod_002', barcode: '7891234567891', name: 'Banana Prata' }
+    ];
+    
+    const existingProduct = mockExistingProducts.find(product => 
+      product.barcode === barcode
+    );
 
     if (existingProduct) {
       console.log('❌ [PRODUCTS/CREATE] Código de barras já existe:', barcode);
@@ -109,55 +108,32 @@ router.post('/', verifyToken, productValidation, asyncHandler(async (req, res) =
       });
     }
 
-    // Criar o produto na tabela products
-    console.log('📦 [PRODUCTS/CREATE] Criando produto no banco...');
-    const { data: newProduct, error: createError } = await supabase
-      .from('products')
-      .insert({
-        name,
-        description,
-        price: isSoldByWeight ? 0 : price,
-        category,
-        barcode,
-        stock: isSoldByWeight ? 0 : stock,
-        is_sold_by_weight: isSoldByWeight,
-        price_per_kg: isSoldByWeight ? pricePerKg : null,
-        image_url: imageUrl || null,
-        is_available: isAvailable,
-        seller_id: req.user.id,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      })
-      .select()
-      .single();
+    // Criar produto mock
+    const newProductId = `prod_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const newProduct = {
+      id: newProductId,
+      name,
+      description,
+      price: isSoldByWeight ? 0 : price,
+      category,
+      barcode,
+      stock: isSoldByWeight ? 0 : stock,
+      isSoldByWeight,
+      pricePerKg: isSoldByWeight ? pricePerKg : null,
+      imageUrl: imageUrl || 'https://via.placeholder.com/500x500.png?text=Product+Image',
+      isAvailable,
+      sellerId: req.user.id,
+      rating: 0,
+      reviewCount: 0,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
 
-    if (createError) {
-      console.error('❌ [PRODUCTS/CREATE] Erro ao criar produto:', createError);
-      throw createError('Erro ao criar produto no banco de dados', 500);
-    }
-
-    console.log('✅ [PRODUCTS/CREATE] Produto criado com sucesso:', newProduct.id);
-    
-    // O trigger automaticamente adiciona o produto ao usuário
+    console.log('✅ [PRODUCTS/CREATE] Produto criado com sucesso:', newProductId);
     
     res.status(201).json({
       message: 'Produto criado com sucesso',
-      product: {
-        id: newProduct.id,
-        name: newProduct.name,
-        description: newProduct.description,
-        price: newProduct.price,
-        category: newProduct.category,
-        barcode: newProduct.barcode,
-        stock: newProduct.stock,
-        isSoldByWeight: newProduct.is_sold_by_weight,
-        pricePerKg: newProduct.price_per_kg,
-        imageUrl: newProduct.image_url,
-        isAvailable: newProduct.is_available,
-        sellerId: newProduct.seller_id,
-        createdAt: newProduct.created_at,
-        updatedAt: newProduct.updated_at
-      }
+      product: newProduct
     });
   } catch (error) {
     console.error('💥 [PRODUCTS/CREATE] ERRO CRÍTICO:', error);
@@ -179,43 +155,54 @@ router.get('/', verifyToken, asyncHandler(async (req, res) => {
   }
 
   try {
-    // Buscar produtos da tabela products
-    const { data: products, error } = await supabase
-      .from('products')
-      .select('*')
-      .eq('seller_id', req.user.id)
-      .order('created_at', { ascending: false });
-
-    if (error) {
-      console.error('❌ [PRODUCTS/LIST] Erro ao buscar produtos:', error);
-      throw createError('Erro ao buscar produtos', 500);
-    }
-
-    console.log('✅ [PRODUCTS/LIST] Produtos encontrados:', products?.length || 0);
+    // Mock temporário para teste local
+    console.log('✅ [PRODUCTS/LIST] Usando mock temporário para teste');
     
-    const formattedProducts = (products || []).map(product => ({
-      id: product.id,
-      name: product.name,
-      description: product.description,
-      price: product.price,
-      category: product.category,
-      barcode: product.barcode,
-      stock: product.stock,
-      isSoldByWeight: product.is_sold_by_weight,
-      pricePerKg: product.price_per_kg,
-      imageUrl: product.image_url,
-      isAvailable: product.is_available,
-      sellerId: product.seller_id,
-      rating: 0,
-      reviewCount: 0,
-      createdAt: product.created_at,
-      updatedAt: product.updated_at
-    }));
+    const mockProducts = [
+      {
+        id: 'prod_001',
+        name: 'Maçã Fuji',
+        description: 'Maçãs frescas e doces, ideais para consumo in natura',
+        price: 8.90,
+        category: 'Frutas e Verduras',
+        barcode: '7891234567890',
+        stock: 50,
+        isSoldByWeight: false,
+        pricePerKg: null,
+        imageUrl: 'https://images.unsplash.com/photo-1560806887-1e4cd0b6cbd6?w=400',
+        isAvailable: true,
+        sellerId: req.user.id,
+        rating: 4.5,
+        reviewCount: 12,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      },
+      {
+        id: 'prod_002',
+        name: 'Banana Prata',
+        description: 'Bananas prata maduras e saborosas',
+        price: 4.50,
+        category: 'Frutas e Verduras',
+        barcode: '7891234567891',
+        stock: 30,
+        isSoldByWeight: false,
+        pricePerKg: null,
+        imageUrl: 'https://images.unsplash.com/photo-1571771894821-ce9b6c11b08e?w=400',
+        isAvailable: true,
+        sellerId: req.user.id,
+        rating: 4.2,
+        reviewCount: 8,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      }
+    ];
+
+    console.log('✅ [PRODUCTS/LIST] Produtos encontrados:', mockProducts.length);
 
     res.status(200).json({
       message: 'Produtos listados com sucesso',
-      products: formattedProducts,
-      total: formattedProducts.length
+      products: mockProducts,
+      total: mockProducts.length
     });
   } catch (error) {
     console.error('💥 [PRODUCTS/LIST] ERRO CRÍTICO:', error);
@@ -484,25 +471,18 @@ router.get('/barcode/:barcode', verifyToken, asyncHandler(async (req, res) => {
   }
 
   try {
-    // Verificar se o código de barras já existe na tabela products
-    const { data: existingProduct, error } = await supabase
-      .from('products')
-      .select('id, name, barcode')
-      .eq('barcode', barcode)
-      .eq('seller_id', req.user.id)
-      .single();
-
-    if (error) {
-      if (error.code === 'PGRST116') {
-        console.log('✅ [PRODUCTS/BARCODE] Código de barras disponível:', barcode);
-        return res.status(200).json({
-          message: 'Código de barras disponível',
-          available: true
-        });
-      }
-      console.error('❌ [PRODUCTS/BARCODE] Erro ao buscar produto:', error);
-      throw createError('Erro ao buscar produto', 500);
-    }
+    // Mock temporário para teste local
+    console.log('✅ [PRODUCTS/BARCODE] Usando mock temporário para teste');
+    
+    // Verificar se o código de barras já existe (mock)
+    const mockExistingProducts = [
+      { id: 'prod_001', barcode: '7891234567890', name: 'Maçã Fuji' },
+      { id: 'prod_002', barcode: '7891234567891', name: 'Banana Prata' }
+    ];
+    
+    const existingProduct = mockExistingProducts.find(product => 
+      product.barcode === barcode
+    );
 
     if (existingProduct) {
       console.log('❌ [PRODUCTS/BARCODE] Código de barras já existe:', barcode);
