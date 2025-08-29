@@ -109,7 +109,7 @@ router.post('/', verifyToken, productValidation, asyncHandler(async (req, res) =
       });
     }
 
-    // Criar o produto
+    // Criar o produto na tabela products
     console.log('📦 [PRODUCTS/CREATE] Criando produto no banco...');
     const { data: newProduct, error: createError } = await supabase
       .from('products')
@@ -137,6 +137,8 @@ router.post('/', verifyToken, productValidation, asyncHandler(async (req, res) =
     }
 
     console.log('✅ [PRODUCTS/CREATE] Produto criado com sucesso:', newProduct.id);
+    
+    // O trigger automaticamente adiciona o produto ao usuário
     
     res.status(201).json({
       message: 'Produto criado com sucesso',
@@ -177,6 +179,7 @@ router.get('/', verifyToken, asyncHandler(async (req, res) => {
   }
 
   try {
+    // Buscar produtos da tabela products
     const { data: products, error } = await supabase
       .from('products')
       .select('*')
@@ -188,9 +191,9 @@ router.get('/', verifyToken, asyncHandler(async (req, res) => {
       throw createError('Erro ao buscar produtos', 500);
     }
 
-    console.log('✅ [PRODUCTS/LIST] Produtos encontrados:', products.length);
+    console.log('✅ [PRODUCTS/LIST] Produtos encontrados:', products?.length || 0);
     
-    const formattedProducts = products.map(product => ({
+    const formattedProducts = (products || []).map(product => ({
       id: product.id,
       name: product.name,
       description: product.description,
@@ -203,6 +206,8 @@ router.get('/', verifyToken, asyncHandler(async (req, res) => {
       imageUrl: product.image_url,
       isAvailable: product.is_available,
       sellerId: product.seller_id,
+      rating: 0,
+      reviewCount: 0,
       createdAt: product.created_at,
       updatedAt: product.updated_at
     }));
@@ -210,7 +215,7 @@ router.get('/', verifyToken, asyncHandler(async (req, res) => {
     res.status(200).json({
       message: 'Produtos listados com sucesso',
       products: formattedProducts,
-      total: products.length
+      total: formattedProducts.length
     });
   } catch (error) {
     console.error('💥 [PRODUCTS/LIST] ERRO CRÍTICO:', error);
@@ -479,9 +484,10 @@ router.get('/barcode/:barcode', verifyToken, asyncHandler(async (req, res) => {
   }
 
   try {
-    const { data: product, error } = await supabase
+    // Verificar se o código de barras já existe na tabela products
+    const { data: existingProduct, error } = await supabase
       .from('products')
-      .select('*')
+      .select('id, name, barcode')
       .eq('barcode', barcode)
       .eq('seller_id', req.user.id)
       .single();
@@ -498,16 +504,23 @@ router.get('/barcode/:barcode', verifyToken, asyncHandler(async (req, res) => {
       throw createError('Erro ao buscar produto', 500);
     }
 
-    console.log('❌ [PRODUCTS/BARCODE] Código de barras já existe:', barcode);
-    
-    res.status(200).json({
-      message: 'Código de barras já existe',
-      available: false,
-      product: {
-        id: product.id,
-        name: product.name,
-        barcode: product.barcode
-      }
+    if (existingProduct) {
+      console.log('❌ [PRODUCTS/BARCODE] Código de barras já existe:', barcode);
+      return res.status(200).json({
+        message: 'Código de barras já existe',
+        available: false,
+        product: {
+          id: existingProduct.id,
+          name: existingProduct.name,
+          barcode: existingProduct.barcode
+        }
+      });
+    }
+
+    console.log('✅ [PRODUCTS/BARCODE] Código de barras disponível:', barcode);
+    return res.status(200).json({
+      message: 'Código de barras disponível',
+      available: true
     });
   } catch (error) {
     console.error('💥 [PRODUCTS/BARCODE] ERRO CRÍTICO:', error);
