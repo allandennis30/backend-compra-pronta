@@ -73,6 +73,69 @@ class User {
   }
 
   /**
+   * Buscar usuário com filtros (equivalente ao findOne do Mongoose)
+   */
+  static async findOne(filters) {
+    try {
+      let query = supabase
+        .from('users')
+        .select('*')
+        .eq('ativo', true);
+
+      // Aplicar filtros
+      Object.keys(filters).forEach(key => {
+        if (filters[key] !== undefined && filters[key] !== null) {
+          query = query.eq(key, filters[key]);
+        }
+      });
+
+      const { data, error } = await query.single();
+
+      if (error) {
+        if (error.code === 'PGRST116') {
+          return null; // Usuário não encontrado
+        }
+        throw error;
+      }
+
+      return new User(data);
+    } catch (error) {
+      console.error('Erro ao buscar usuário com filtros:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Buscar usuários com filtros (equivalente ao find do Mongoose)
+   */
+  static async find(filters = {}) {
+    try {
+      let query = supabase
+        .from('users')
+        .select('*')
+        .eq('ativo', true);
+
+      // Aplicar filtros
+      Object.keys(filters).forEach(key => {
+        if (filters[key] !== undefined && filters[key] !== null) {
+          query = query.eq(key, filters[key]);
+        }
+      });
+
+      const { data, error } = await query;
+
+      if (error) {
+        throw error;
+      }
+
+      return data.map(user => new User(user));
+    } catch (error) {
+      console.error('Erro ao buscar usuários com filtros:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Criar novo usuário
    */
   static async create(userData) {
