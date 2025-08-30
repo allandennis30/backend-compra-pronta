@@ -87,62 +87,6 @@ router.post('/', verifyToken, productValidation, asyncHandler(async (req, res) =
   } = req.body;
 
   try {
-    // Modo desenvolvimento: se header de bypass presente, usar mock
-    if (process.env.NODE_ENV !== 'production' && req.headers['x-dev-seller-id']) {
-      console.log('✅ [PRODUCTS/CREATE] Usando mock por bypass de dev header');
-      const newProductId = `prod_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      const newProduct = {
-        id: newProductId,
-        name,
-        description,
-        price: isSoldByWeight ? 0 : price,
-        category,
-        barcode,
-        stock: isSoldByWeight ? 0 : stock,
-        isSoldByWeight,
-        pricePerKg: isSoldByWeight ? pricePerKg : null,
-        imageUrl: imageUrl || 'https://via.placeholder.com/500x500.png?text=Product+Image',
-        isAvailable,
-        sellerId: req.user.id,
-        rating: 0,
-        reviewCount: 0,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      };
-      return res.status(201).json({
-        message: 'Produto criado com sucesso (mock)',
-        product: newProduct
-      });
-    }
-
-    // Se não houver Supabase configurado, usar mock temporário
-    if (!process.env.SUPABASE_URL || !process.env.SUPABASE_KEY) {
-      console.log('✅ [PRODUCTS/CREATE] Usando mock temporário para teste (sem Supabase)');
-      const newProductId = `prod_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      const newProduct = {
-        id: newProductId,
-        name,
-        description,
-        price: isSoldByWeight ? 0 : price,
-        category,
-        barcode,
-        stock: isSoldByWeight ? 0 : stock,
-        isSoldByWeight,
-        pricePerKg: isSoldByWeight ? pricePerKg : null,
-        imageUrl: imageUrl || 'https://via.placeholder.com/500x500.png?text=Product+Image',
-        isAvailable,
-        sellerId: req.user.id,
-        rating: 0,
-        reviewCount: 0,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      };
-      return res.status(201).json({
-        message: 'Produto criado com sucesso (mock)',
-        product: newProduct
-      });
-    }
-
     // Verificar se o código de barras já existe para este vendedor
     const { data: dup, error: dupError } = await supabase
       .from('products')
@@ -232,54 +176,40 @@ router.get('/', verifyToken, asyncHandler(async (req, res) => {
   }
 
   try {
-    // Mock temporário para teste local
-    console.log('✅ [PRODUCTS/LIST] Usando mock temporário para teste');
-    
-    const mockProducts = [
-      {
-        id: 'prod_001',
-        name: 'Maçã Fuji',
-        description: 'Maçãs frescas e doces, ideais para consumo in natura',
-        price: 8.90,
-        category: 'Frutas e Verduras',
-        barcode: '7891234567890',
-        stock: 50,
-        isSoldByWeight: false,
-        pricePerKg: null,
-        imageUrl: 'https://images.unsplash.com/photo-1560806887-1e4cd0b6cbd6?w=400',
-        isAvailable: true,
-        sellerId: req.user.id,
-        rating: 4.5,
-        reviewCount: 12,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      },
-      {
-        id: 'prod_002',
-        name: 'Banana Prata',
-        description: 'Bananas prata maduras e saborosas',
-        price: 4.50,
-        category: 'Frutas e Verduras',
-        barcode: '7891234567891',
-        stock: 30,
-        isSoldByWeight: false,
-        pricePerKg: null,
-        imageUrl: 'https://images.unsplash.com/photo-1571771894821-ce9b6c11b08e?w=400',
-        isAvailable: true,
-        sellerId: req.user.id,
-        rating: 4.2,
-        reviewCount: 8,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      }
-    ];
+    const { data, error } = await supabase
+      .from('products')
+      .select('*')
+      .eq('seller_id', req.user.id)
+      .order('updated_at', { ascending: false });
 
-    console.log('✅ [PRODUCTS/LIST] Produtos encontrados:', mockProducts.length);
+    if (error) {
+      console.error('❌ [PRODUCTS/LIST] Erro ao listar produtos:', error);
+      throw createError('Erro ao listar produtos', 500);
+    }
+
+    const products = (data || []).map(product => ({
+      id: product.id,
+      name: product.name,
+      description: product.description,
+      price: product.price,
+      category: product.category,
+      barcode: product.barcode,
+      stock: product.stock,
+      isSoldByWeight: product.is_sold_by_weight,
+      pricePerKg: product.price_per_kg,
+      imageUrl: product.image_url,
+      isAvailable: product.is_available,
+      sellerId: product.seller_id,
+      createdAt: product.created_at,
+      updatedAt: product.updated_at
+    }));
+
+    console.log('✅ [PRODUCTS/LIST] Produtos encontrados:', products.length);
 
     res.status(200).json({
       message: 'Produtos listados com sucesso',
-      products: mockProducts,
-      total: mockProducts.length
+      products,
+      total: products.length
     });
   } catch (error) {
     console.error('💥 [PRODUCTS/LIST] ERRO CRÍTICO:', error);
@@ -302,56 +232,6 @@ router.get('/:id', verifyToken, asyncHandler(async (req, res) => {
   }
 
   try {
-    // Modo desenvolvimento: se header de bypass presente, usar mock
-    if (process.env.NODE_ENV !== 'production' && req.headers['x-dev-seller-id']) {
-      console.log('✅ [PRODUCTS/GET] Usando mock por bypass de dev header');
-      const mockProduct = {
-        id,
-        name: 'Produto Mock',
-        description: 'Descrição mockada para testes locais',
-        price: 9.99,
-        category: 'Outros',
-        barcode: '0000000000000',
-        stock: 10,
-        isSoldByWeight: false,
-        pricePerKg: null,
-        imageUrl: null,
-        isAvailable: true,
-        sellerId: req.user.id,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      };
-      return res.status(200).json({
-        message: 'Produto encontrado (mock)',
-        product: mockProduct
-      });
-    }
-
-    // Mock temporário para ambiente sem Supabase
-    if (!process.env.SUPABASE_URL || !process.env.SUPABASE_KEY) {
-      console.log('✅ [PRODUCTS/GET] Usando mock temporário para teste (sem Supabase)');
-      const mockProduct = {
-        id,
-        name: 'Produto Mock',
-        description: 'Descrição mockada para testes locais',
-        price: 9.99,
-        category: 'Outros',
-        barcode: '0000000000000',
-        stock: 10,
-        isSoldByWeight: false,
-        pricePerKg: null,
-        imageUrl: null,
-        isAvailable: true,
-        sellerId: req.user.id,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      };
-      return res.status(200).json({
-        message: 'Produto encontrado (mock)',
-        product: mockProduct
-      });
-    }
-
     const { data: product, error } = await supabase
       .from('products')
       .select('*')
@@ -434,56 +314,6 @@ router.put('/:id', verifyToken, productValidation, asyncHandler(async (req, res)
   } = req.body;
 
   try {
-    // Modo desenvolvimento: se header de bypass presente, usar mock
-    if (process.env.NODE_ENV !== 'production' && req.headers['x-dev-seller-id']) {
-      console.log('✅ [PRODUCTS/UPDATE] Usando mock por bypass de dev header');
-      const updatedProduct = {
-        id,
-        name,
-        description,
-        price: isSoldByWeight ? 0 : price,
-        category,
-        barcode,
-        stock: isSoldByWeight ? 0 : stock,
-        isSoldByWeight,
-        pricePerKg: isSoldByWeight ? pricePerKg : null,
-        imageUrl: imageUrl || null,
-        isAvailable,
-        sellerId: req.user.id,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      };
-      return res.status(200).json({
-        message: 'Produto atualizado com sucesso (mock)',
-        product: updatedProduct
-      });
-    }
-
-    // Mock temporário para ambiente sem Supabase
-    if (!process.env.SUPABASE_URL || !process.env.SUPABASE_KEY) {
-      console.log('✅ [PRODUCTS/UPDATE] Usando mock temporário para teste (sem Supabase)');
-      const updatedProduct = {
-        id,
-        name,
-        description,
-        price: isSoldByWeight ? 0 : price,
-        category,
-        barcode,
-        stock: isSoldByWeight ? 0 : stock,
-        isSoldByWeight,
-        pricePerKg: isSoldByWeight ? pricePerKg : null,
-        imageUrl: imageUrl || null,
-        isAvailable,
-        sellerId: req.user.id,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      };
-      return res.status(200).json({
-        message: 'Produto atualizado com sucesso (mock)',
-        product: updatedProduct
-      });
-    }
-
     // Verificar se o produto existe e pertence ao vendedor
     const { data: existingProduct, error: checkError } = await supabase
       .from('products')
@@ -648,36 +478,28 @@ router.get('/barcode/:barcode', verifyToken, asyncHandler(async (req, res) => {
   }
 
   try {
-    // Mock temporário para teste local
-    console.log('✅ [PRODUCTS/BARCODE] Usando mock temporário para teste');
-    
-    // Verificar se o código de barras já existe (mock)
-    const mockExistingProducts = [
-      { id: 'prod_001', barcode: '7891234567890', name: 'Maçã Fuji' },
-      { id: 'prod_002', barcode: '7891234567891', name: 'Banana Prata' }
-    ];
-    
-    const existingProduct = mockExistingProducts.find(product => 
-      product.barcode === barcode
-    );
+    const { data: product, error } = await supabase
+      .from('products')
+      .select('id, name, barcode')
+      .eq('barcode', barcode)
+      .eq('seller_id', req.user.id)
+      .single();
 
-    if (existingProduct) {
-      console.log('❌ [PRODUCTS/BARCODE] Código de barras já existe:', barcode);
-      return res.status(200).json({
-        message: 'Código de barras já existe',
-        available: false,
-        product: {
-          id: existingProduct.id,
-          name: existingProduct.name,
-          barcode: existingProduct.barcode
-        }
-      });
+    if (error) {
+      if (error.code === 'PGRST116') {
+        return res.status(200).json({
+          message: 'Código de barras disponível',
+          available: true
+        });
+      }
+      console.error('❌ [PRODUCTS/BARCODE] Erro ao buscar por código:', error);
+      throw createError('Erro ao buscar por código de barras', 500);
     }
 
-    console.log('✅ [PRODUCTS/BARCODE] Código de barras disponível:', barcode);
     return res.status(200).json({
-      message: 'Código de barras disponível',
-      available: true
+      message: 'Código de barras já existe',
+      available: false,
+      product
     });
   } catch (error) {
     console.error('💥 [PRODUCTS/BARCODE] ERRO CRÍTICO:', error);

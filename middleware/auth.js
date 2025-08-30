@@ -6,17 +6,7 @@ const { validationResult } = require('express-validator');
  */
 const verifyToken = (req, res, next) => {
   try {
-    // Bypass de desenvolvimento: permitir header x-dev-seller-id
-    if (process.env.NODE_ENV !== 'production' && req.headers['x-dev-seller-id']) {
-      req.user = {
-        id: req.headers['x-dev-seller-id'],
-        email: 'dev@example.com',
-        nome: 'Dev User',
-        isSeller: true,
-        tipo: 'vendedor'
-      };
-      return next();
-    }
+    // Removido bypass de desenvolvimento
 
     // Verificar se há erros de validação
     const errors = validationResult(req);
