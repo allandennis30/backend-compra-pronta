@@ -189,3 +189,4 @@ Se encontrar problemas:
 - [ ] Rotas de produtos funcionando
 - [ ] App configurado para usar API real
 - [ ] Testes realizados com sucesso
+

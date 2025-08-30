@@ -168,3 +168,4 @@ SELECT
 FROM information_schema.routines 
 WHERE routine_name IN ('add_product_to_user', 'remove_product_from_user', 'get_user_products', 'update_products_updated_at', 'add_product_to_user_trigger', 'remove_product_from_user_trigger')
 AND routine_schema = 'public';
+

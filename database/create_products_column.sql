@@ -60,3 +60,4 @@ SELECT
 FROM information_schema.routines 
 WHERE routine_name IN ('add_product_to_user', 'remove_product_from_user', 'get_user_products')
 AND routine_schema = 'public';
+

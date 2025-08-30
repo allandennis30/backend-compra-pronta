@@ -89,3 +89,4 @@ SELECT
     with_check
 FROM pg_policies 
 WHERE tablename = 'products';
+

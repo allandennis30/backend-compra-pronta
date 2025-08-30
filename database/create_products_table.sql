@@ -63,3 +63,4 @@ CREATE TRIGGER update_products_updated_at_trigger
     BEFORE UPDATE ON products
     FOR EACH ROW
     EXECUTE FUNCTION update_products_updated_at();
+
