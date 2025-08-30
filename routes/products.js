@@ -133,7 +133,13 @@ router.post('/', verifyToken, productValidation, asyncHandler(async (req, res) =
 
     if (insertError) {
       console.error('❌ [PRODUCTS/CREATE] Erro ao criar produto:', insertError);
-      throw createError('Erro ao criar produto no banco de dados', 500);
+      return res.status(500).json({
+        error: 'Erro ao criar produto no banco de dados',
+        code: insertError.code,
+        message: insertError.message,
+        details: insertError.details,
+        hint: insertError.hint
+      });
     }
 
     console.log('✅ [PRODUCTS/CREATE] Produto criado com sucesso:', created.id);
