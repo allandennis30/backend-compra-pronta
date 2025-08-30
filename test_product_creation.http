@@ -1,0 +1,68 @@
+# Teste para criação de produtos após correção RLS
+# Execute este arquivo no VS Code com extensão REST Client
+# ou use curl/Postman
+
+### 1. Verificar status do servidor
+GET https://backend-compra-pronta.onrender.com/api/health
+Content-Type: application/json
+
+### 2. Login como vendedor para obter token
+POST https://backend-compra-pronta.onrender.com/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "teste@teste.com",
+  "password": "Teste@123"
+}
+
+### 3. Criar produto (substitua TOKEN pelo token recebido no login)
+POST https://backend-compra-pronta.onrender.com/api/products
+Content-Type: application/json
+Authorization: Bearer TOKEN_AQUI
+
+{
+  "name": "Produto Teste RLS",
+  "description": "Produto para testar correção do RLS",
+  "price": 15.99,
+  "category": "Pães e Massas",
+  "barcode": "7891234567890",
+  "stock": 25,
+  "isSoldByWeight": false,
+  "isAvailable": true,
+  "imageUrl": "https://via.placeholder.com/500x500.png?text=Teste+RLS"
+}
+
+### 4. Listar produtos do vendedor
+GET https://backend-compra-pronta.onrender.com/api/products
+Content-Type: application/json
+Authorization: Bearer TOKEN_AQUI
+
+### 5. Teste com dados inválidos (deve retornar erro 400)
+POST https://backend-compra-pronta.onrender.com/api/products
+Content-Type: application/json
+Authorization: Bearer TOKEN_AQUI
+
+{
+  "name": "",
+  "description": "desc",
+  "price": -1,
+  "category": "",
+  "barcode": "",
+  "stock": -1
+}
+
+### 6. Teste com código de barras duplicado (deve retornar erro 409)
+POST https://backend-compra-pronta.onrender.com/api/products
+Content-Type: application/json
+Authorization: Bearer TOKEN_AQUI
+
+{
+  "name": "Produto Duplicado",
+  "description": "Produto com código de barras duplicado",
+  "price": 10.00,
+  "category": "Outros",
+  "barcode": "7891234567890",
+  "stock": 10,
+  "isSoldByWeight": false,
+  "isAvailable": true
+}
