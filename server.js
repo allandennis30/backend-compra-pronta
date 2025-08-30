@@ -47,22 +47,26 @@ app.use(cors({
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Middleware de logging para todas as requisições
+// Middleware de logging simplificado
 app.use((req, res, next) => {
-  console.log('🌐 [HTTP_REQUEST]', new Date().toISOString());
-  console.log('📍 [HTTP_REQUEST]', req.method, req.url);
-  console.log('🌐 [HTTP_REQUEST] IP:', req.ip);
-  console.log('📋 [HTTP_REQUEST] Headers:', JSON.stringify(req.headers, null, 2));
-  
-  if (req.body && Object.keys(req.body).length > 0) {
-    console.log('📝 [HTTP_REQUEST] Body:', JSON.stringify(req.body, null, 2));
+  // Log apenas requisições importantes (não health check)
+  if (!req.url.includes('/health')) {
+    console.log(`📍 [${req.method}] ${req.url} - IP: ${req.ip}`);
+    
+    // Log do body apenas para POST/PUT e sem headers verbosos
+    if ((req.method === 'POST' || req.method === 'PUT') && req.body && Object.keys(req.body).length > 0) {
+      console.log('📝 [BODY]:', JSON.stringify(req.body, null, 2));
+    }
   }
   
-  // Log da resposta
+  // Log da resposta apenas para erros (4xx, 5xx)
   const originalSend = res.send;
   res.send = function(data) {
-    console.log('📤 [HTTP_RESPONSE] Status:', res.statusCode);
-    console.log('📤 [HTTP_RESPONSE] Response:', data);
+    if (res.statusCode >= 400 && !req.url.includes('/health')) {
+      console.log(`❌ [${res.statusCode}] ${req.method} ${req.url}:`, data);
+    } else if (res.statusCode >= 200 && res.statusCode < 300 && !req.url.includes('/health')) {
+      console.log(`✅ [${res.statusCode}] ${req.method} ${req.url}`);
+    }
     originalSend.call(this, data);
   };
   

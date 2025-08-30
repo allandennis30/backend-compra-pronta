@@ -146,8 +146,7 @@ const findUserById = async (id) => {
  * Autenticar usuário
  */
 router.post('/login', loginValidation, asyncHandler(async (req, res) => {
-  console.log('🔐 [LOGIN] Iniciando processo de login');
-  console.log('📝 [LOGIN] Dados recebidos:', JSON.stringify(req.body, null, 2));
+  console.log('🔐 [LOGIN] Tentativa de login:', req.body.email);
   
   try {
     // Verificar erros de validação
@@ -161,10 +160,10 @@ router.post('/login', loginValidation, asyncHandler(async (req, res) => {
     }
 
     const { email, senha } = req.body;
-    console.log('✅ [LOGIN] Validação passou, email:', email);
+
 
     // Buscar usuário
-    console.log('🔍 [LOGIN] Buscando usuário por email:', email);
+
     const userResult = await findUserByEmail(email);
     if (!userResult) {
       console.log('❌ [LOGIN] Usuário não encontrado:', email);
@@ -175,10 +174,10 @@ router.post('/login', loginValidation, asyncHandler(async (req, res) => {
     }
 
     const { user, type } = userResult;
-    console.log('✅ [LOGIN] Usuário encontrado:', user.id, 'Tipo:', type);
+
 
     // Verificar senha
-    console.log('🔐 [LOGIN] Verificando senha...');
+
     const isValidPassword = await user.verifyPassword(senha);
     if (!isValidPassword) {
       console.log('❌ [LOGIN] Senha incorreta para usuário:', email);
@@ -187,18 +186,18 @@ router.post('/login', loginValidation, asyncHandler(async (req, res) => {
         message: 'Email ou senha incorretos'
       });
     }
-    console.log('✅ [LOGIN] Senha válida para usuário:', email);
+
 
     // Gerar token
-    console.log('🔑 [LOGIN] Gerando token JWT...');
+
     const token = generateToken(user);
-    console.log('✅ [LOGIN] Token gerado com sucesso');
+
     
     // Remover dados sensíveis
     const sanitizedUser = user.toJSON();
-    console.log('🧹 [LOGIN] Dados sanitizados, removendo senha');
 
-    console.log('🎉 [LOGIN] Login realizado com sucesso para:', email);
+
+    console.log('✅ [LOGIN] Sucesso:', email, '(' + type + ')');
     res.status(200).json({
       message: 'Login realizado com sucesso',
       token,

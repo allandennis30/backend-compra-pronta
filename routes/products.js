@@ -54,8 +54,7 @@ const productValidation = [
  * Criar novo produto (apenas vendedores)
  */
 router.post('/', verifyToken, productValidation, asyncHandler(async (req, res) => {
-  console.log('🛍️ [PRODUCTS/CREATE] Iniciando criação de produto');
-  console.log('📝 [PRODUCTS/CREATE] Dados recebidos:', JSON.stringify(req.body, null, 2));
+  console.log('🛍️ [PRODUCTS/CREATE] Criando produto:', req.body.name);
   
   // Verificar se o usuário é vendedor
   if (!req.user.isSeller) {
@@ -108,7 +107,6 @@ router.post('/', verifyToken, productValidation, asyncHandler(async (req, res) =
     }
 
     // Inserir produto no Supabase
-    console.log('📦 [PRODUCTS/CREATE] Inserindo produto no banco...');
     const insertData = {
       name,
       description,
@@ -132,7 +130,7 @@ router.post('/', verifyToken, productValidation, asyncHandler(async (req, res) =
       .single();
 
     if (insertError) {
-      console.error('❌ [PRODUCTS/CREATE] Erro ao criar produto:', insertError);
+      console.error('❌ [PRODUCTS/CREATE] Erro:', insertError.message);
       return res.status(500).json({
         error: 'Erro ao criar produto no banco de dados',
         code: insertError.code,
@@ -142,7 +140,7 @@ router.post('/', verifyToken, productValidation, asyncHandler(async (req, res) =
       });
     }
 
-    console.log('✅ [PRODUCTS/CREATE] Produto criado com sucesso:', created.id);
+    console.log('✅ [PRODUCTS/CREATE] Produto criado:', created.name);
     res.status(201).json({
       message: 'Produto criado com sucesso',
       product: {
@@ -173,7 +171,6 @@ router.post('/', verifyToken, productValidation, asyncHandler(async (req, res) =
  * Listar produtos do vendedor
  */
 router.get('/', verifyToken, asyncHandler(async (req, res) => {
-  console.log('📋 [PRODUCTS/LIST] Listando produtos do vendedor:', req.user.id);
   
   // Verificar se o usuário é vendedor
   if (!req.user.isSeller) {
@@ -210,7 +207,7 @@ router.get('/', verifyToken, asyncHandler(async (req, res) => {
       updatedAt: product.updated_at
     }));
 
-    console.log('✅ [PRODUCTS/LIST] Produtos encontrados:', products.length);
+
 
     res.status(200).json({
       message: 'Produtos listados com sucesso',
@@ -229,7 +226,6 @@ router.get('/', verifyToken, asyncHandler(async (req, res) => {
  */
 router.get('/:id', verifyToken, asyncHandler(async (req, res) => {
   const { id } = req.params;
-  console.log('🔍 [PRODUCTS/GET] Buscando produto:', id);
   
   // Verificar se o usuário é vendedor
   if (!req.user.isSeller) {
@@ -254,7 +250,7 @@ router.get('/:id', verifyToken, asyncHandler(async (req, res) => {
       throw createError('Erro ao buscar produto', 500);
     }
 
-    console.log('✅ [PRODUCTS/GET] Produto encontrado:', product.id);
+
     
     res.status(200).json({
       message: 'Produto encontrado',
@@ -287,8 +283,7 @@ router.get('/:id', verifyToken, asyncHandler(async (req, res) => {
  */
 router.put('/:id', verifyToken, productValidation, asyncHandler(async (req, res) => {
   const { id } = req.params;
-  console.log('🔄 [PRODUCTS/UPDATE] Atualizando produto:', id);
-  console.log('📝 [PRODUCTS/UPDATE] Dados recebidos:', JSON.stringify(req.body, null, 2));
+  console.log('🔄 [PRODUCTS/UPDATE] Atualizando produto:', req.body.name);
   
   // Verificar se o usuário é vendedor
   if (!req.user.isSeller) {
@@ -360,7 +355,7 @@ router.put('/:id', verifyToken, productValidation, asyncHandler(async (req, res)
     }
 
     // Atualizar o produto
-    console.log('📦 [PRODUCTS/UPDATE] Atualizando produto no banco...');
+
     const { data: updatedProduct, error: updateError } = await supabase
       .from('products')
       .update({
@@ -386,7 +381,7 @@ router.put('/:id', verifyToken, productValidation, asyncHandler(async (req, res)
       throw createError('Erro ao atualizar produto no banco de dados', 500);
     }
 
-    console.log('✅ [PRODUCTS/UPDATE] Produto atualizado com sucesso:', updatedProduct.id);
+    console.log('✅ [PRODUCTS/UPDATE] Produto atualizado:', updatedProduct.name);
     
     res.status(200).json({
       message: 'Produto atualizado com sucesso',
@@ -419,7 +414,6 @@ router.put('/:id', verifyToken, productValidation, asyncHandler(async (req, res)
  */
 router.delete('/:id', verifyToken, asyncHandler(async (req, res) => {
   const { id } = req.params;
-  console.log('🗑️ [PRODUCTS/DELETE] Deletando produto:', id);
   
   // Verificar se o usuário é vendedor
   if (!req.user.isSeller) {
@@ -457,7 +451,7 @@ router.delete('/:id', verifyToken, asyncHandler(async (req, res) => {
       throw createError('Erro ao deletar produto do banco de dados', 500);
     }
 
-    console.log('✅ [PRODUCTS/DELETE] Produto deletado com sucesso:', id);
+    console.log('✅ [PRODUCTS/DELETE] Produto deletado:', id);
     
     res.status(200).json({
       message: 'Produto deletado com sucesso',
@@ -475,7 +469,6 @@ router.delete('/:id', verifyToken, asyncHandler(async (req, res) => {
  */
 router.get('/barcode/:barcode', verifyToken, asyncHandler(async (req, res) => {
   const { barcode } = req.params;
-  console.log('🔍 [PRODUCTS/BARCODE] Buscando produto por código de barras:', barcode);
   
   // Verificar se o usuário é vendedor
   if (!req.user.isSeller) {
