@@ -87,6 +87,34 @@ router.post('/', verifyToken, productValidation, asyncHandler(async (req, res) =
   } = req.body;
 
   try {
+    // Modo desenvolvimento: se header de bypass presente, usar mock
+    if (process.env.NODE_ENV !== 'production' && req.headers['x-dev-seller-id']) {
+      console.log('✅ [PRODUCTS/CREATE] Usando mock por bypass de dev header');
+      const newProductId = `prod_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      const newProduct = {
+        id: newProductId,
+        name,
+        description,
+        price: isSoldByWeight ? 0 : price,
+        category,
+        barcode,
+        stock: isSoldByWeight ? 0 : stock,
+        isSoldByWeight,
+        pricePerKg: isSoldByWeight ? pricePerKg : null,
+        imageUrl: imageUrl || 'https://via.placeholder.com/500x500.png?text=Product+Image',
+        isAvailable,
+        sellerId: req.user.id,
+        rating: 0,
+        reviewCount: 0,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+      return res.status(201).json({
+        message: 'Produto criado com sucesso (mock)',
+        product: newProduct
+      });
+    }
+
     // Se não houver Supabase configurado, usar mock temporário
     if (!process.env.SUPABASE_URL || !process.env.SUPABASE_KEY) {
       console.log('✅ [PRODUCTS/CREATE] Usando mock temporário para teste (sem Supabase)');
@@ -274,6 +302,31 @@ router.get('/:id', verifyToken, asyncHandler(async (req, res) => {
   }
 
   try {
+    // Modo desenvolvimento: se header de bypass presente, usar mock
+    if (process.env.NODE_ENV !== 'production' && req.headers['x-dev-seller-id']) {
+      console.log('✅ [PRODUCTS/GET] Usando mock por bypass de dev header');
+      const mockProduct = {
+        id,
+        name: 'Produto Mock',
+        description: 'Descrição mockada para testes locais',
+        price: 9.99,
+        category: 'Outros',
+        barcode: '0000000000000',
+        stock: 10,
+        isSoldByWeight: false,
+        pricePerKg: null,
+        imageUrl: null,
+        isAvailable: true,
+        sellerId: req.user.id,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+      return res.status(200).json({
+        message: 'Produto encontrado (mock)',
+        product: mockProduct
+      });
+    }
+
     // Mock temporário para ambiente sem Supabase
     if (!process.env.SUPABASE_URL || !process.env.SUPABASE_KEY) {
       console.log('✅ [PRODUCTS/GET] Usando mock temporário para teste (sem Supabase)');
@@ -381,6 +434,31 @@ router.put('/:id', verifyToken, productValidation, asyncHandler(async (req, res)
   } = req.body;
 
   try {
+    // Modo desenvolvimento: se header de bypass presente, usar mock
+    if (process.env.NODE_ENV !== 'production' && req.headers['x-dev-seller-id']) {
+      console.log('✅ [PRODUCTS/UPDATE] Usando mock por bypass de dev header');
+      const updatedProduct = {
+        id,
+        name,
+        description,
+        price: isSoldByWeight ? 0 : price,
+        category,
+        barcode,
+        stock: isSoldByWeight ? 0 : stock,
+        isSoldByWeight,
+        pricePerKg: isSoldByWeight ? pricePerKg : null,
+        imageUrl: imageUrl || null,
+        isAvailable,
+        sellerId: req.user.id,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+      return res.status(200).json({
+        message: 'Produto atualizado com sucesso (mock)',
+        product: updatedProduct
+      });
+    }
+
     // Mock temporário para ambiente sem Supabase
     if (!process.env.SUPABASE_URL || !process.env.SUPABASE_KEY) {
       console.log('✅ [PRODUCTS/UPDATE] Usando mock temporário para teste (sem Supabase)');
